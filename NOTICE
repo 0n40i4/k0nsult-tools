@@ -1,0 +1,23 @@
+k0nsult-tools — K0NSULT open-source tooling
+Copyright 2026 K0NSULT / 0n40i4
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+================================================================================
+SCOPE
+================================================================================
+This repository contains ONLY reusable, self-contained tooling:
+  - sbom.mjs          — CycloneDX-lite SBOM generator (per-file SHA-256), zero deps
+  - make_bundle.mjs   — deterministic evidence-bundle manifest builder
+  - verify_bundle.mjs — independent bundle verifier (organ / third party)
+
+The proprietary K0NSULT orchestration engine (k0nsult.cloud) is NOT part of this
+repository and is never open-sourced. These generators operate on any directory
+you point them at (`--root <path>`); they carry no engine code, no data, no keys.
+
+================================================================================
+DOCTRINE (invariant)
+================================================================================
+  - claim <= proof (evidence-first; the bundle is a DRAFT until an operator signs it)
+  - Human Override Always (signing is a human action, off-tool)
+  - No Password Custody — these tools never generate, store, or request a private key
