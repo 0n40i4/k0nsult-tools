@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // sbom.mjs — generator SBOM (CycloneDX-lite JSON) dla powierzchni open-source K0NSULT.
 // Zero zależności (tylko wbudowane node: fs, path, crypto).
-// Enumeruje: strona/*.html (top-level), strona/model_map/*.json, wykryte moduły *.mjs/*.js
-//            oraz zależności node z package.json (jeśli są, poza node_modules).
+// Enumeruje: KAZDY plik pod --root (rekurencyjnie, poza .git i node_modules),
+//            kazdy pliniowany SHA-256; plus zaleznosci node z package.json (jesli sa).
 //
 // Uzycie:
 //   node sbom.mjs                       # domyslny root (repo METER PIASKOWNICA)
@@ -39,7 +39,7 @@ function listFiles(dir, { recursive = false, ext = null } = {}) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (recursive && entry.name !== 'node_modules') {
+      if (recursive && entry.name !== 'node_modules' && entry.name !== '.git') {
         out.push(...listFiles(full, { recursive, ext }));
       }
     } else if (entry.isFile()) {
@@ -55,33 +55,36 @@ function bomRef(prefix, rel) {
   return `${prefix}:${rel}`;
 }
 
-// --- 1) enumeracja powierzchni plikowych ---
+// --- 1) enumeracja WSZYSTKICH plikow pod ROOT (rekurencyjnie) ---
 const components = [];
-const surfaces = [
-  { dir: path.join(ROOT, 'strona'), recursive: false, ext: ['.html'], group: 'strona', type: 'file' },
-  { dir: path.join(ROOT, 'strona', 'model_map'), recursive: false, ext: ['.json'], group: 'strona/model_map', type: 'data' },
-  { dir: path.join(ROOT, 'strona', 'model_map'), recursive: false, ext: ['.mjs', '.js'], group: 'strona/model_map', type: 'file' },
-];
 
-for (const s of surfaces) {
-  for (const f of listFiles(s.dir, { recursive: s.recursive, ext: s.ext })) {
-    const buf = fs.readFileSync(f);
-    const rel = relPosix(f);
-    components.push({
-      type: s.type,                 // CycloneDX component type: file | data | library
-      'bom-ref': bomRef('surface', rel),
-      name: path.basename(f),
-      group: s.group,
-      version: '1.0.0',
-      scope: 'required',
-      hashes: [{ alg: 'SHA-256', content: sha256(buf) }],
-      properties: [
-        { name: 'k0nsult:path', value: rel },
-        { name: 'k0nsult:bytes', value: String(buf.length) },
-        { name: 'k0nsult:surface', value: 'open-source' },
-      ],
-    });
-  }
+function classify(rel) {
+  const l = rel.toLowerCase();
+  if (l.endsWith('.html') || l.endsWith('.htm')) return { type: 'file', group: 'html' };
+  if (l.endsWith('.json')) return { type: 'data', group: 'data' };
+  if (l.endsWith('.mjs') || l.endsWith('.js') || l.endsWith('.ts')) return { type: 'file', group: 'code' };
+  return { type: 'file', group: 'other' };
+}
+
+for (const f of listFiles(ROOT, { recursive: true })) {
+  if (path.resolve(f) === OUT) continue;        // nie inwentaryzuj wlasnego outputu
+  const buf = fs.readFileSync(f);
+  const rel = relPosix(f);
+  const { type, group } = classify(rel);
+  components.push({
+    type,                           // CycloneDX component type: file | data
+    'bom-ref': bomRef('surface', rel),
+    name: path.basename(f),
+    group,
+    version: '1.0.0',
+    scope: 'required',
+    hashes: [{ alg: 'SHA-256', content: sha256(buf) }],
+    properties: [
+      { name: 'k0nsult:path', value: rel },
+      { name: 'k0nsult:bytes', value: String(buf.length) },
+      { name: 'k0nsult:surface', value: 'open-source' },
+    ],
+  });
 }
 
 // --- 2) wykryte zaleznosci node z package.json (poza node_modules) ---
@@ -139,7 +142,7 @@ const bom = {
     },
     properties: [
       { name: 'k0nsult:root', value: ROOT.split(path.sep).join('/') },
-      { name: 'k0nsult:scope', value: 'strona/*.html + strona/model_map/*.json + moduly + node deps' },
+      { name: 'k0nsult:scope', value: 'all files under root (recursive, excl. .git/node_modules) + node deps' },
       { name: 'k0nsult:license_proposed', value: 'Apache-2.0 (patrz LICENSE.proposed)' },
     ],
   },
@@ -149,9 +152,10 @@ const bom = {
 // --- 4) statystyki + zapis ---
 const stats = {
   total: components.length,
-  files_html: components.filter((c) => c.group === 'strona').length,
-  data_json: components.filter((c) => c.group === 'strona/model_map' && c.type === 'data').length,
-  modules_js: components.filter((c) => c.group === 'strona/model_map' && c.type === 'file').length,
+  files_html: components.filter((c) => c.group === 'html').length,
+  data_json: components.filter((c) => c.group === 'data').length,
+  code_files: components.filter((c) => c.group === 'code').length,
+  other_files: components.filter((c) => c.group === 'other').length,
   node_libraries: nodeDeps.length,
 };
 bom.metadata.properties.push({ name: 'k0nsult:stats', value: JSON.stringify(stats) });
@@ -161,4 +165,4 @@ fs.writeFileSync(OUT, JSON.stringify(bom, null, 2) + '\n');
 console.log('SBOM napisany:', OUT);
 console.log('root:', ROOT);
 console.log('komponenty:', stats.total,
-  `(html=${stats.files_html}, data_json=${stats.data_json}, modules=${stats.modules_js}, node_libs=${stats.node_libraries})`);
+  `(html=${stats.files_html}, data=${stats.data_json}, code=${stats.code_files}, other=${stats.other_files}, node_libs=${stats.node_libraries})`);

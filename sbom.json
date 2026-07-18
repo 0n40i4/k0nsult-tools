@@ -1,0 +1,211 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "$profile": "cyclonedx-lite (podzbior: bez services/vulnerabilities/compositions)",
+  "serialNumber": "urn:uuid:d4390ace-dc4e-49d1-89da-3351b70a4133",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-07-18T21:18:38.767Z",
+    "tools": [
+      {
+        "vendor": "K0NSULT",
+        "name": "sbom.mjs",
+        "version": "1.0.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "bom-ref": "k0nsult-opensource-surface",
+      "name": "K0NSULT open-source surface (ai-truth / uni0nai / ipIII)",
+      "version": "1.0.0"
+    },
+    "properties": [
+      {
+        "name": "k0nsult:root",
+        "value": "C:/Users/USER/Desktop/K0NSULT-OSS/k0nsult-tools"
+      },
+      {
+        "name": "k0nsult:scope",
+        "value": "all files under root (recursive, excl. .git/node_modules) + node deps"
+      },
+      {
+        "name": "k0nsult:license_proposed",
+        "value": "Apache-2.0 (patrz LICENSE.proposed)"
+      },
+      {
+        "name": "k0nsult:stats",
+        "value": "{\"total\":6,\"files_html\":0,\"data_json\":0,\"code_files\":3,\"other_files\":3,\"node_libraries\":0}"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "file",
+      "bom-ref": "surface:LICENSE",
+      "name": "LICENSE",
+      "group": "other",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3359ea11b3bdde09d47f03740e257cdcefbb1a0161878cb792aa5863e5d83269"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "LICENSE"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "11357"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "surface:make_bundle.mjs",
+      "name": "make_bundle.mjs",
+      "group": "code",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "81e8b5ac69a42f4238c74c807c9d08e4dbe2e659054a27842d22a90124f20172"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "make_bundle.mjs"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "4645"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "surface:NOTICE",
+      "name": "NOTICE",
+      "group": "other",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "da71a26e8236e18c90438e47699d7ff352f31c3ec3654554ad5265cf27949bce"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "NOTICE"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "1275"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "surface:README.md",
+      "name": "README.md",
+      "group": "other",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b2dc7a85b0d2ae1e1635053146dac85384a527715870c0b7096f79f49c04ca72"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "README.md"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "2334"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "surface:sbom.mjs",
+      "name": "sbom.mjs",
+      "group": "code",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e0da193e92a6f0b4b14bf7eb321f8f4b2ffada165d8376908c64723e696b4d72"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "sbom.mjs"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "6361"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "surface:verify_bundle.mjs",
+      "name": "verify_bundle.mjs",
+      "group": "code",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b748d578f4fe064df965d3ee6c51088f3c0eb7abedeb916bf7ad8917ec608d1b"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "verify_bundle.mjs"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "3073"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    }
+  ]
+}
