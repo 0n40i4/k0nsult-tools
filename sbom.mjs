@@ -28,6 +28,8 @@ function argVal(flag, def) {
 const DEFAULT_ROOT = process.cwd();
 const ROOT = path.resolve(argVal('--root', DEFAULT_ROOT));
 const OUT = path.resolve(argVal('--out', path.join(__dirname, 'sbom.json')));
+// Relative repo name only — never leak the absolute host path (OS/user/dir layout, CWE-200).
+const REPO_NAME = path.basename(ROOT);
 
 // --- helpers ---
 function sha256(buf) {
@@ -136,14 +138,14 @@ const bom = {
     tools: [{ vendor: 'K0NSULT', name: 'sbom.mjs', version: '1.0.0' }],
     component: {
       type: 'application',
-      'bom-ref': 'k0nsult-opensource-surface',
-      name: 'K0NSULT open-source surface (ai-truth / uni0nai / ipIII)',
+      'bom-ref': REPO_NAME,
+      name: REPO_NAME,
       version: '1.0.0',
       // Pole SPDX licenses (CycloneDX): identyfikator z listy SPDX, bez wiszacych wskaznikow.
       licenses: [{ license: { id: 'Apache-2.0' } }],
     },
     properties: [
-      { name: 'k0nsult:root', value: ROOT.split(path.sep).join('/') },
+      { name: 'k0nsult:repo', value: REPO_NAME },
       { name: 'k0nsult:scope', value: 'all files under root (recursive, excl. .git/node_modules) + node deps' },
       { name: 'k0nsult:license', value: 'Apache-2.0' },
     ],
