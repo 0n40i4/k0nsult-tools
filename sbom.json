@@ -2,10 +2,10 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "$profile": "cyclonedx-lite (podzbior: bez services/vulnerabilities/compositions)",
-  "serialNumber": "urn:uuid:d4390ace-dc4e-49d1-89da-3351b70a4133",
+  "serialNumber": "urn:uuid:68311b73-53a2-41cb-843e-c2d7709d6a31",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-07-18T21:18:38.767Z",
+    "timestamp": "2026-07-19T07:22:08.045Z",
     "tools": [
       {
         "vendor": "K0NSULT",
@@ -34,7 +34,7 @@
       },
       {
         "name": "k0nsult:stats",
-        "value": "{\"total\":6,\"files_html\":0,\"data_json\":0,\"code_files\":3,\"other_files\":3,\"node_libraries\":0}"
+        "value": "{\"total\":8,\"files_html\":0,\"data_json\":1,\"code_files\":3,\"other_files\":4,\"node_libraries\":0}"
       }
     ]
   },
@@ -125,6 +125,34 @@
     },
     {
       "type": "file",
+      "bom-ref": "surface:PATENT_GRANT.md",
+      "name": "PATENT_GRANT.md",
+      "group": "other",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "828f215dbf9f7e74479a521fad8eda0fb423b9636adf014fd067573d3a11fef1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "PATENT_GRANT.md"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "1907"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
       "bom-ref": "surface:README.md",
       "name": "README.md",
       "group": "other",
@@ -172,6 +200,34 @@
         {
           "name": "k0nsult:bytes",
           "value": "6361"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "bom-ref": "surface:schema/finding-v1.schema.json",
+      "name": "finding-v1.schema.json",
+      "group": "data",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1130b3dd0751382fd3cb0123929059612eb882f12610ad786c6899ae83e8b8ed"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "schema/finding-v1.schema.json"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "1953"
         },
         {
           "name": "k0nsult:surface",
