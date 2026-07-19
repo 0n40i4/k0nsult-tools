@@ -2,10 +2,10 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "$profile": "cyclonedx-lite (podzbior: bez services/vulnerabilities/compositions)",
-  "serialNumber": "urn:uuid:da3c488e-ee0d-4af4-84ee-45c702cd067d",
+  "serialNumber": "urn:uuid:f34feb96-0865-4206-89e7-200a434428c5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-07-19T08:52:04.016Z",
+    "timestamp": "2026-07-19T09:05:37.812Z",
     "tools": [
       {
         "vendor": "K0NSULT",
@@ -34,11 +34,39 @@
       },
       {
         "name": "k0nsult:stats",
-        "value": "{\"total\":10,\"files_html\":0,\"data_json\":1,\"code_files\":3,\"other_files\":6,\"node_libraries\":0}"
+        "value": "{\"total\":13,\"files_html\":0,\"data_json\":1,\"code_files\":3,\"other_files\":9,\"node_libraries\":0}"
       }
     ]
   },
   "components": [
+    {
+      "type": "file",
+      "bom-ref": "surface:docs/DEP-PROVENANCE-SPEC.md",
+      "name": "DEP-PROVENANCE-SPEC.md",
+      "group": "other",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2af349267f696d6e4ce5ec4b20049a7afc18b444adca00136e24944fc1e2f2fb"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "docs/DEP-PROVENANCE-SPEC.md"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "10677"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
     {
       "type": "file",
       "bom-ref": "surface:docs/PROCUREMENT-ACCEPTANCE-CHECK.md",
@@ -69,6 +97,34 @@
     },
     {
       "type": "file",
+      "bom-ref": "surface:docs/SBOM-EXPOSE-SPEC.md",
+      "name": "SBOM-EXPOSE-SPEC.md",
+      "group": "other",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "33e54645dc93becd785f3a8817351b8c0ac9fcbb2ef6fe54a4333b00be552a92"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "docs/SBOM-EXPOSE-SPEC.md"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "11447"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
       "bom-ref": "surface:docs/SBOM-PROFILE.md",
       "name": "SBOM-PROFILE.md",
       "group": "other",
@@ -88,6 +144,34 @@
         {
           "name": "k0nsult:bytes",
           "value": "11450"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "surface:docs/SIGNED-ATTESTATION-SPEC.md",
+      "name": "SIGNED-ATTESTATION-SPEC.md",
+      "group": "other",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "262914370bef1a926716d586f47b5b14efc9ad475074b464a01123b38e177bee"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "docs/SIGNED-ATTESTATION-SPEC.md"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "13222"
         },
         {
           "name": "k0nsult:surface",
