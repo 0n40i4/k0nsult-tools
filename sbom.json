@@ -2,10 +2,10 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "$profile": "cyclonedx-lite (podzbior: bez services/vulnerabilities/compositions)",
-  "serialNumber": "urn:uuid:68311b73-53a2-41cb-843e-c2d7709d6a31",
+  "serialNumber": "urn:uuid:da3c488e-ee0d-4af4-84ee-45c702cd067d",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-07-19T07:22:08.045Z",
+    "timestamp": "2026-07-19T08:52:04.016Z",
     "tools": [
       {
         "vendor": "K0NSULT",
@@ -34,11 +34,67 @@
       },
       {
         "name": "k0nsult:stats",
-        "value": "{\"total\":8,\"files_html\":0,\"data_json\":1,\"code_files\":3,\"other_files\":4,\"node_libraries\":0}"
+        "value": "{\"total\":10,\"files_html\":0,\"data_json\":1,\"code_files\":3,\"other_files\":6,\"node_libraries\":0}"
       }
     ]
   },
   "components": [
+    {
+      "type": "file",
+      "bom-ref": "surface:docs/PROCUREMENT-ACCEPTANCE-CHECK.md",
+      "name": "PROCUREMENT-ACCEPTANCE-CHECK.md",
+      "group": "other",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e955839a6d80e400a77e7978db4503728a178bd448f82a19a0099cfde682eeec"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "docs/PROCUREMENT-ACCEPTANCE-CHECK.md"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "9290"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "surface:docs/SBOM-PROFILE.md",
+      "name": "SBOM-PROFILE.md",
+      "group": "other",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ab9fa06a6e766316287537f71e043eed62afa2a02e77ebb11468753727fea2d6"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "docs/SBOM-PROFILE.md"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "11450"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
     {
       "type": "file",
       "bom-ref": "surface:LICENSE",
