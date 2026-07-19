@@ -2,10 +2,10 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "$profile": "cyclonedx-lite (podzbior: bez services/vulnerabilities/compositions)",
-  "serialNumber": "urn:uuid:22207934-5722-451f-a59d-535b827defc0",
+  "serialNumber": "urn:uuid:644de5cf-c510-4404-b44c-0f76b2be6283",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-07-19T09:52:13.768Z",
+    "timestamp": "2026-07-19T19:34:18.554Z",
     "tools": [
       {
         "vendor": "K0NSULT",
@@ -17,7 +17,14 @@
       "type": "application",
       "bom-ref": "k0nsult-opensource-surface",
       "name": "K0NSULT open-source surface (ai-truth / uni0nai / ipIII)",
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ]
     },
     "properties": [
       {
@@ -29,8 +36,8 @@
         "value": "all files under root (recursive, excl. .git/node_modules) + node deps"
       },
       {
-        "name": "k0nsult:license_proposed",
-        "value": "Apache-2.0 (patrz LICENSE.proposed)"
+        "name": "k0nsult:license",
+        "value": "Apache-2.0"
       },
       {
         "name": "k0nsult:stats",
@@ -77,7 +84,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "83a5a723e1ce7ece55d9a2397d1951d309a185824c7d6eaf286931be29d14494"
+          "content": "3a0868d071121e52f65292ad73333cd4950f81008cc1de31fbe7e37348ad9578"
         }
       ],
       "properties": [
@@ -87,7 +94,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "17070"
+          "value": "19444"
         },
         {
           "name": "k0nsult:surface",
@@ -301,7 +308,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "3359ea11b3bdde09d47f03740e257cdcefbb1a0161878cb792aa5863e5d83269"
+          "content": "b44e41deed1d991b2ba132410c77a44ec459f5fd18d65a347962fbef4f559c4a"
         }
       ],
       "properties": [
@@ -311,7 +318,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "11357"
+          "value": "11348"
         },
         {
           "name": "k0nsult:surface",
@@ -357,7 +364,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "da71a26e8236e18c90438e47699d7ff352f31c3ec3654554ad5265cf27949bce"
+          "content": "9d9a50694d8df634a23392ecb24b1addb18984ea3be6944fb07795758525eba3"
         }
       ],
       "properties": [
@@ -367,7 +374,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "1275"
+          "value": "1299"
         },
         {
           "name": "k0nsult:surface",
@@ -413,7 +420,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "3d988bb35798968d98294c7aed4366de34ee5278a8474e8f6578c1b715d7f292"
+          "content": "48971c0d8fb5db4b6d00f4435a6c9a7e2150bf79b21c8df219d07e44d653e47f"
         }
       ],
       "properties": [
@@ -423,7 +430,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "11370"
+          "value": "12768"
         },
         {
           "name": "k0nsult:surface",
@@ -469,7 +476,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "46eaa7a8cf129a9e39a0af41ceb222ce69c6a40bf750a50820bfc3a9430f46a2"
+          "content": "bb724fda4736cb5e0537425c0f587a68198d2a28fe2ef01a3ee94ceb63496a6b"
         }
       ],
       "properties": [
@@ -479,7 +486,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "15099"
+          "value": "22433"
         },
         {
           "name": "k0nsult:surface",
@@ -497,7 +504,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "e0da193e92a6f0b4b14bf7eb321f8f4b2ffada165d8376908c64723e696b4d72"
+          "content": "0722237fd7323ddcedd716ab017bf5b68d8904d445875196feb95a134fa761b9"
         }
       ],
       "properties": [
@@ -507,7 +514,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "6361"
+          "value": "6475"
         },
         {
           "name": "k0nsult:surface",

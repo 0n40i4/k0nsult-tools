@@ -139,11 +139,13 @@ const bom = {
       'bom-ref': 'k0nsult-opensource-surface',
       name: 'K0NSULT open-source surface (ai-truth / uni0nai / ipIII)',
       version: '1.0.0',
+      // Pole SPDX licenses (CycloneDX): identyfikator z listy SPDX, bez wiszacych wskaznikow.
+      licenses: [{ license: { id: 'Apache-2.0' } }],
     },
     properties: [
       { name: 'k0nsult:root', value: ROOT.split(path.sep).join('/') },
       { name: 'k0nsult:scope', value: 'all files under root (recursive, excl. .git/node_modules) + node deps' },
-      { name: 'k0nsult:license_proposed', value: 'Apache-2.0 (patrz LICENSE.proposed)' },
+      { name: 'k0nsult:license', value: 'Apache-2.0' },
     ],
   },
   components,

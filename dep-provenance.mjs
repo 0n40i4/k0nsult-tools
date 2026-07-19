@@ -38,12 +38,22 @@ const EEA_ONLY_COUNTRIES = new Set(['IS', 'LI', 'NO']);
 
 // --- TWARDY ZAKAZ: klucze wskazujące na OSOBĘ (człowieka) -------------------
 // Ich obecność w JAKIEJKOLWIEK deklaracji = natychmiastowy ABORT.
+// Klucze porównujemy PO normalizacji `normKey` (lowercase + [\s-]->_), więc
+// wpisujemy TYLKO postać znormalizowaną. Dodatkowo trzymamy postać
+// "sklejoną" (bez separatorów) — tak jak conformance.mjs — żeby wariant
+// camelCase (naturalPerson -> naturalperson) też trafiał w zakaz.
 const FORBIDDEN_PERSON_KEYS = new Set([
   'person',
-  'natural_person',
-  'nationality_of_person',
+  'natural_person', 'naturalperson',
+  'nationality_of_person', 'nationalityofperson',
   'nationality',
 ]);
+
+// Ta sama normalizacja co w conformance.mjs (k0nsult-uni0nai): lowercase +
+// zamiana białych znaków i myślników na podkreślenie. Dzięki niej
+// natural-person / "natural person" / naturalPerson normalizują się do postaci
+// obecnych w FORBIDDEN_PERSON_KEYS i również aborują.
+const normKey = (k) => String(k).toLowerCase().replace(/[\s-]/g, '_');
 
 class PersonDataError extends Error {
   constructor(keyPath) {
@@ -76,7 +86,7 @@ function assertNoPersonData(value, pathPrefix = '') {
     return;
   }
   for (const key of Object.keys(value)) {
-    const norm = key.toLowerCase();
+    const norm = normKey(key);
     if (FORBIDDEN_PERSON_KEYS.has(norm)) {
       throw new PersonDataError(pathPrefix ? `${pathPrefix}.${key}` : key);
     }
@@ -336,6 +346,46 @@ function runSelftest() {
       threw = e instanceof PersonDataError;
     }
     assert(threw, 'oczekiwano PersonDataError dla nationality');
+  });
+
+  // (3e) NEGATYWNY [regresja F5]: 'natural-person' (myślnik) => ABORT
+  // Wektor sędziego: przed poprawką guard robił tylko toLowerCase(), więc
+  // 'natural-person' NIE trafiał w 'natural_person' i PRZECHODZIŁ. Teraz FAIL.
+  check("NEGATYWNY: 'natural-person' (myślnik) => ABORT", () => {
+    const root = [{ component: 'r', 'natural-person': { imie: 'X' }, country: 'PL' }];
+    let threw = false;
+    try {
+      classify({ declarationsRoot: root, components: ['r'] });
+    } catch (e) {
+      threw = e instanceof PersonDataError;
+    }
+    assert(threw, "oczekiwano PersonDataError dla 'natural-person'");
+  });
+
+  // (3f) NEGATYWNY [regresja F5]: 'naturalPerson' (camelCase) => ABORT
+  // Drugi wektor obchodzenia: camelCase. Normalizacja sklejona + wpis
+  // 'naturalperson' w FORBIDDEN_PERSON_KEYS domyka lukę.
+  check("NEGATYWNY: 'naturalPerson' (camelCase) => ABORT", () => {
+    const root = [{ component: 's', naturalPerson: true, country: 'DE' }];
+    let threw = false;
+    try {
+      classify({ declarationsRoot: root, components: ['s'] });
+    } catch (e) {
+      threw = e instanceof PersonDataError;
+    }
+    assert(threw, "oczekiwano PersonDataError dla 'naturalPerson'");
+  });
+
+  // (3g) NEGATYWNY [regresja F5]: 'nationality of person' (spacje) => ABORT
+  check("NEGATYWNY: 'nationality of person' (spacje) => ABORT", () => {
+    const root = [{ component: 't', 'nationality of person': 'PL' }];
+    let threw = false;
+    try {
+      classify({ declarationsRoot: root, components: ['t'] });
+    } catch (e) {
+      threw = e instanceof PersonDataError;
+    }
+    assert(threw, "oczekiwano PersonDataError dla 'nationality of person'");
   });
 
   // (4) STRAŻNIK: jawne jurisdiction_class="UNKNOWN" jest zakazane

@@ -61,22 +61,34 @@ function normalizeOffer(raw) {
 function scoreOffer(rawOffer) {
   const offer = normalizeOffer(rawOffer);
 
-  const breakdown = {
+  // Skladniki punktacji liczone DOKLADNIE (bez zaokraglania na tym etapie).
+  // Zaokraglenie per-skladnik zawyzalo niepelna kompletnosc (np. 20*0.99975=19.995
+  // -> round2 -> 20) i przerzucalo prog. Total i verdict licz z NIEzaokraglonych.
+  const raw = {
     sbom: offer.sbom_hash_rederivable ? WEIGHTS.sbom : 0,
     patent: offer.patent_grant ? WEIGHTS.patent : 0,
-    completeness: round2(WEIGHTS.completeness * offer.completeness),
+    completeness: WEIGHTS.completeness * offer.completeness,
     vex: offer.vex_present ? WEIGHTS.vex : 0,
   };
 
-  const total = round2(breakdown.sbom + breakdown.patent + breakdown.completeness + breakdown.vex);
-  const clamped = Math.max(0, Math.min(100, total));
+  const rawTotal = raw.sbom + raw.patent + raw.completeness + raw.vex;
+  const clamped = Math.max(0, Math.min(100, rawTotal));
+  // WERDYKT z NIEzaokraglonego totalu — zaokraglamy WYLACZNIE do prezentacji.
   const verdict = clamped >= PASS_THRESHOLD ? 'PASS' : 'REJECT';
+
+  // Breakdown i total zaokraglone tylko na potrzeby wyswietlania/JSON.
+  const breakdown = {
+    sbom: raw.sbom,
+    patent: raw.patent,
+    completeness: round2(raw.completeness),
+    vex: raw.vex,
+  };
 
   return {
     offer,
     weights: WEIGHTS,
     breakdown,
-    total: clamped,
+    total: round2(clamped),
     threshold: PASS_THRESHOLD,
     verdict,
   };
@@ -128,6 +140,21 @@ function runSelftest() {
       offer: { sbom_hash_rederivable: true, patent_grant: false, completeness: 0.9995, vex_present: true },
       // 40 + 0 + round2(20*0.9995)=19.99 + 10 = 69.99 => REJECT
       expect: { total: 69.99, verdict: 'REJECT', lessThan70: true },
+    },
+    {
+      name: 'completeness 0.999 bez patentu => REJECT',
+      offer: { sbom_hash_rederivable: true, patent_grant: false, completeness: 0.999, vex_present: true },
+      // 40 + 0 + 20*0.999=19.98 + 10 = 69.98 < 70 => REJECT
+      expect: { verdict: 'REJECT', lessThan70: true },
+    },
+    // --- NEGATYWNE: EXPLOIT SEDZIEGO ZABLOKOWANY (wektor ktory PRZECHODZIL, teraz FAIL) ---
+    {
+      // Przed fix: round2(20*0.99975)=round2(19.995)=20 zawyzalo skladnik ->
+      //   total 40+0+20+10=70 -> bledny PASS. Teraz total liczony z niezaokraglonych:
+      //   40+0+19.995+10 = 69.995 < 70 => REJECT (mimo ze prezentowany total zaokragla do 70).
+      name: 'EXPLOIT F7 ZABLOKOWANY: completeness 0.99975 bez patentu => REJECT (nie PASS)',
+      offer: { sbom_hash_rederivable: true, patent_grant: false, completeness: 0.99975, vex_present: true },
+      expect: { verdict: 'REJECT' },
     },
     // --- NEGATYWNE: walidacja odrzuca smieciowe wejscie (rzuca) ---
     { name: 'completeness > 1 => blad walidacji', offer: { completeness: 1.5 }, throws: true },

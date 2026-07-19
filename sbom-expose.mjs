@@ -45,11 +45,21 @@ export function purlPrefixMatches(purl, prefix) {
 }
 
 // --- porownanie semver-ish: zwraca -1/0/1, lub null gdy nieporownywalne ---
+// Obsluguje precedencje prerelease wg semver 2.0.0 (regula 11):
+//   1.0.0-alpha < 1.0.0 ; identyfikatory prerelease porownywane numerycznie/leksykalnie;
+//   numeryczne < alfanumeryczne; mniej pol < wiecej pol przy rownym prefiksie.
+// Metadane build (+...) sa ignorowane w precedencji.
 export function compareVersions(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return null;
-  const norm = (v) => v.trim().replace(/^v/i, '').split(/[-+]/)[0]; // odetnij prerelease/build
-  const pa = norm(a).split('.');
-  const pb = norm(b).split('.');
+  const parse = (v) => {
+    const s = v.trim().replace(/^v/i, '').split('+')[0]; // odetnij metadane build
+    const i = s.indexOf('-');
+    return i === -1 ? { main: s, pre: null } : { main: s.slice(0, i), pre: s.slice(i + 1) };
+  };
+  const A = parse(a);
+  const B = parse(b);
+  const pa = A.main.split('.');
+  const pb = B.main.split('.');
   const len = Math.max(pa.length, pb.length);
   for (let i = 0; i < len; i++) {
     const xa = pa[i] === undefined ? 0 : Number(pa[i]);
@@ -58,17 +68,96 @@ export function compareVersions(a, b) {
     if (xa < xb) return -1;
     if (xa > xb) return 1;
   }
+  // rdzen (major.minor.patch) rowny => rozstrzyga precedencja prerelease
+  return comparePrerelease(A.pre, B.pre);
+}
+
+// Precedencja prerelease wg semver 2.0.0 (regula 11). Zwraca -1/0/1.
+function comparePrerelease(pa, pb) {
+  if (pa === null && pb === null) return 0;
+  if (pa === null) return 1;  // brak prerelease ma WYZSZA precedencje niz prerelease
+  if (pb === null) return -1;
+  const ia = pa.split('.');
+  const ib = pb.split('.');
+  const len = Math.max(ia.length, ib.length);
+  for (let i = 0; i < len; i++) {
+    if (ia[i] === undefined) return -1; // mniej pol => nizsza precedencja
+    if (ib[i] === undefined) return 1;
+    const na = /^\d+$/.test(ia[i]);
+    const nb = /^\d+$/.test(ib[i]);
+    if (na && nb) {
+      const da = Number(ia[i]);
+      const db = Number(ib[i]);
+      if (da !== db) return da < db ? -1 : 1;
+    } else if (na && !nb) {
+      return -1; // identyfikator numeryczny < alfanumeryczny
+    } else if (!na && nb) {
+      return 1;
+    } else if (ia[i] !== ib[i]) {
+      return ia[i] < ib[i] ? -1 : 1; // leksykalnie (ASCII)
+    }
+  }
   return 0;
+}
+
+// --- rozwiniecie caret/tilde na jawny zakres ">=lower <upper" ---
+// Zwraca string zakresu lub null, gdy major nie jest liczba (=> nieokreslony).
+//   ^1.2.3 => >=1.2.3 <2.0.0 ; ^0.2.3 => >=0.2.3 <0.3.0 ; ^0.0.3 => >=0.0.3 <0.0.4
+//   ~1.2.3 => >=1.2.3 <1.3.0 ; ~1.2 => >=1.2.0 <1.3.0 ; ~1 => >=1.0.0 <2.0.0
+function expandCaretTilde(tok) {
+  const op = tok[0]; // '^' albo '~'
+  const raw = tok.slice(1).trim().replace(/^v/i, '');
+  const core = raw.split(/[-+]/)[0]; // granice wyznaczamy z rdzenia (bez prerelease/build)
+  const parts = core.split('.');
+  const nums = parts.map((p) => Number(p));
+  if (!Number.isFinite(nums[0])) return null; // wymagany numeryczny major
+  const major = nums[0];
+  const minor = Number.isFinite(nums[1]) ? nums[1] : 0;
+  const patch = Number.isFinite(nums[2]) ? nums[2] : 0;
+  const lower = `${major}.${minor}.${patch}`;
+  let upper;
+  if (op === '~') {
+    // dolna granica minor gdy podano >=2 pola, inaczej major
+    upper = parts.length >= 2 ? `${major}.${minor + 1}.0` : `${major + 1}.0.0`;
+  } else {
+    // caret: zamrozony pierwszy niezerowy element (major>0, potem minor>0, potem patch)
+    if (major > 0 || parts.length === 1) upper = `${major + 1}.0.0`;
+    else if (minor > 0 || parts.length === 2) upper = `${major}.${minor + 1}.0`;
+    else upper = `${major}.${minor}.${patch + 1}`;
+  }
+  return `>=${lower} <${upper}`;
 }
 
 // --- ocena zakresu: czy `version` miesci sie w `range`? ---
 // Zwraca true | false | null (null = nie da sie sparsowac => RANGE_UNKNOWN)
-// Obslugiwane: ">=1.0.0 <2.0.0", "<2.0.0", ">1.0.0", "<=2.0.0", "=1.2.3", "1.2.3",
-//              "1.0.0 - 2.0.0" (inkluzywny), tokeny rozdzielone spacja lub przecinkiem.
+// WSPIERANE OPERATORY (jawnie udokumentowane):
+//   - komparatory:      >=, <=, >, <, =, ==   (np. ">=1.0.0 <2.0.0", "<2.0.0", "=1.2.3")
+//   - wersja goła:      "1.2.3"                (rownowazne "=1.2.3")
+//   - koniunkcja (AND): tokeny rozdzielone spacja lub przecinkiem
+//   - hyphen (inkluz.): "1.0.0 - 2.0.0"
+//   - caret:            "^1.2.3"               (rozwijany na ">=1.2.3 <2.0.0" itd.)
+//   - tilde:            "~1.2.3"               (rozwijany na ">=1.2.3 <1.3.0" itd.)
+//   - alternatywa (OR): "A || B"               (spelnione gdy KTORAKOLWIEK galaz spelniona)
+// Precedencja prerelease: patrz compareVersions (semver 2.0.0 regula 11).
 export function versionInRange(version, range) {
   if (typeof version !== 'string' || typeof range !== 'string') return null;
   const r = range.trim();
   if (r === '' || r === '*') return null; // pusty/dowolny zakres = nieokreslony
+
+  // OR: "A || B" — true gdy KTORAKOLWIEK galaz true.
+  // Semantyka trojwartosciowa: true>null>false — jesli zadna nie jest true,
+  // ale istnieje galaz nieokreslona (null), calosc jest null (nie falszywy spokoj).
+  if (r.includes('||')) {
+    const branches = r.split('||').map((s) => s.trim()).filter(Boolean);
+    if (branches.length === 0) return null;
+    let anyNull = false;
+    for (const br of branches) {
+      const res = versionInRange(version, br);
+      if (res === true) return true;
+      if (res === null) anyNull = true;
+    }
+    return anyNull ? null : false;
+  }
 
   // zakres hyphenowy: "A - B"
   const hyphen = r.match(/^([^\s]+)\s+-\s+([^\s]+)$/);
@@ -82,6 +171,15 @@ export function versionInRange(version, range) {
   const tokens = r.split(/[\s,]+/).filter(Boolean);
   let result = true;
   for (const tok of tokens) {
+    // caret / tilde => rozwin na ">=lower <upper" i oceniaj rekurencyjnie
+    if (tok[0] === '^' || tok[0] === '~') {
+      const sub = expandCaretTilde(tok);
+      if (sub === null) return null;
+      const res = versionInRange(version, sub);
+      if (res === null) return null;
+      result = result && res;
+      continue;
+    }
     const m = tok.match(/^(>=|<=|>|<|=|==)?\s*(.+)$/);
     if (!m) return null;
     const op = m[1] || '=';
@@ -206,6 +304,9 @@ function selftest() {
       { type: 'library', name: 'weirdrange', version: '2.0.0', purl: 'pkg:npm/weirdrange@2.0.0' },
       { type: 'application', name: 'app', version: '1.0.0', purl: 'pkg:npm/app@1.0.0' }, // nie library
       { type: 'library', name: 'nopurl', version: '1.0.0' }, // bez purl
+      // F12: realne podatne komponenty z zakresami OR / caret (przed fix = RANGE_UNKNOWN)
+      { type: 'library', name: 'orlib', version: '1.5.0', purl: 'pkg:npm/orlib@1.5.0' },
+      { type: 'library', name: 'caretlib', version: '1.4.2', purl: 'pkg:npm/caretlib@1.4.2' },
     ],
   };
 
@@ -215,6 +316,10 @@ function selftest() {
     entries: [
       { purl_prefix: 'pkg:npm/lodash', id: 'CVE-TEST-0001', affected_range: '>=4.0.0 <4.17.21' },
       { purl_prefix: 'pkg:npm/weirdrange', id: 'CVE-TEST-0002', affected_range: 'latest-broken' },
+      // OR: pierwsza galaz nie trafia (1.5.0 !< 1.0.0), druga trafia (>=1.4.0 <2.0.0)
+      { purl_prefix: 'pkg:npm/orlib', id: 'CVE-TEST-0003', affected_range: '<1.0.0 || >=1.4.0 <2.0.0' },
+      // caret: ^1.4.0 => >=1.4.0 <2.0.0 => 1.4.2 trafia
+      { purl_prefix: 'pkg:npm/caretlib', id: 'CVE-TEST-0004', affected_range: '^1.4.0' },
     ],
   };
 
@@ -253,13 +358,26 @@ function selftest() {
   assert(byName['weirdrange'].exposure === EXPOSURE.RANGE_UNKNOWN,
     `oczekiwano RANGE_UNKNOWN dla weirdrange, jest ${byName['weirdrange'] && byName['weirdrange'].exposure}`);
 
+  // --- F12 EXPLOIT ZABLOKOWANY (wektor ktory PRZECHODZIL jako RANGE_UNKNOWN, teraz MATCH) ---
+  // Przed fix: zakres OR "<1.0.0 || >=1.4.0 <2.0.0" nie byl parsowany ('||' -> null),
+  //   wiec podatny komponent 1.5.0 chowal sie jako RANGE_UNKNOWN (nie wykryty). Teraz MATCH.
+  assert(byName['orlib'].exposure === EXPOSURE.MATCH,
+    `oczekiwano MATCH dla orlib@1.5.0 (zakres OR), jest ${byName['orlib'] && byName['orlib'].exposure}`);
+  assert(byName['orlib'].advisories.includes('CVE-TEST-0003'),
+    'MATCH OR powinien niesc id advisory CVE-TEST-0003');
+  // Przed fix: '^1.4.0' nieparsowalne -> RANGE_UNKNOWN. Teraz caret rozwijany => MATCH.
+  assert(byName['caretlib'].exposure === EXPOSURE.MATCH,
+    `oczekiwano MATCH dla caretlib@1.4.2 (caret ^1.4.0), jest ${byName['caretlib'] && byName['caretlib'].exposure}`);
+  assert(byName['caretlib'].advisories.includes('CVE-TEST-0004'),
+    'MATCH caret powinien niesc id advisory CVE-TEST-0004');
+
   // FILTRY — application i bez-purl pominiete
   assert(!withFeed.results.some((r) => r.name === 'app'),
     'komponent type=application nie powinien byc oceniany');
   assert(!withFeed.results.some((r) => r.name === 'nopurl'),
     'komponent bez purl nie powinien byc oceniany');
-  assert(withFeed.components_assessed === 6,
-    `oczekiwano 6 ocenionych komponentow, jest ${withFeed.components_assessed}`);
+  assert(withFeed.components_assessed === 8,
+    `oczekiwano 8 ocenionych komponentow, jest ${withFeed.components_assessed}`);
 
   // --- BEZ migawki => wszystko NO_FEED (jawny GAP) ---
   const noFeed = analyzeSbom(sbom, null);
@@ -276,6 +394,24 @@ function selftest() {
   assert(versionInRange('2.5.0', '>=1.0.0 <2.0.0') === false, 'versionInRange poza zakresem');
   assert(versionInRange('1.5.0', 'garbage') === null, 'versionInRange nieparsowalny => null');
   assert(versionInRange('1.5.0', '1.0.0 - 2.0.0') === true, 'versionInRange hyphen');
+  // OR (||)
+  assert(versionInRange('1.5.0', '<1.0.0 || >=1.4.0 <2.0.0') === true, 'OR: druga galaz trafia');
+  assert(versionInRange('3.0.0', '<1.0.0 || >=1.4.0 <2.0.0') === false, 'OR: zadna galaz nie trafia => false');
+  assert(versionInRange('1.5.0', '<1.0.0 || garbage') === null, 'OR: brak true + galaz null => null');
+  // caret (^)
+  assert(versionInRange('1.4.2', '^1.4.0') === true, 'caret ^1.4.0: 1.4.2 w zakresie');
+  assert(versionInRange('2.0.0', '^1.4.0') === false, 'caret ^1.4.0: 2.0.0 poza zakresem');
+  assert(versionInRange('0.2.5', '^0.2.3') === true, 'caret ^0.2.3: 0.2.5 w zakresie');
+  assert(versionInRange('0.3.0', '^0.2.3') === false, 'caret ^0.2.3: 0.3.0 poza (<0.3.0)');
+  // tilde (~)
+  assert(versionInRange('1.2.9', '~1.2.3') === true, 'tilde ~1.2.3: 1.2.9 w zakresie');
+  assert(versionInRange('1.3.0', '~1.2.3') === false, 'tilde ~1.2.3: 1.3.0 poza (<1.3.0)');
+  // precedencja prerelease (semver 2.0.0)
+  assert(compareVersions('1.0.0-alpha', '1.0.0') === -1, 'prerelease < release');
+  assert(compareVersions('1.0.0-alpha.1', '1.0.0-alpha.2') === -1, 'prerelease numeryczny porzadek');
+  assert(compareVersions('1.0.0-alpha', '1.0.0-alpha.1') === -1, 'prerelease: mniej pol < wiecej pol');
+  assert(compareVersions('1.0.0+build', '1.0.0') === 0, 'metadane build ignorowane w precedencji');
+  assert(versionInRange('2.0.0-rc1', '>=1.0.0 <2.0.0') === true, 'prerelease 2.0.0-rc1 < 2.0.0 => w zakresie');
   assert(purlPrefixMatches('pkg:npm/lodash-es@1.0.0', 'pkg:npm/lodash') === false, 'granica prefiksu');
   assert(purlPrefixMatches('pkg:npm/lodash@1.0.0', 'pkg:npm/lodash') === true, 'prefiks trafia na @');
 
