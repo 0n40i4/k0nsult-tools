@@ -2,10 +2,10 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "$profile": "cyclonedx-lite (podzbior: bez services/vulnerabilities/compositions)",
-  "serialNumber": "urn:uuid:dcb14148-33bd-45c2-a579-769260745fc6",
+  "serialNumber": "urn:uuid:22207934-5722-451f-a59d-535b827defc0",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-07-19T09:37:29.285Z",
+    "timestamp": "2026-07-19T09:52:13.768Z",
     "tools": [
       {
         "vendor": "K0NSULT",
@@ -34,11 +34,39 @@
       },
       {
         "name": "k0nsult:stats",
-        "value": "{\"total\":18,\"files_html\":0,\"data_json\":3,\"code_files\":6,\"other_files\":9,\"node_libraries\":0}"
+        "value": "{\"total\":19,\"files_html\":0,\"data_json\":3,\"code_files\":7,\"other_files\":9,\"node_libraries\":0}"
       }
     ]
   },
   "components": [
+    {
+      "type": "file",
+      "bom-ref": "surface:attest-verify.mjs",
+      "name": "attest-verify.mjs",
+      "group": "code",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3aac50d7a49e53936e0d50eccd2d4610a3510805d632e5eaaf516caf804e34dc"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "attest-verify.mjs"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "10056"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
     {
       "type": "file",
       "bom-ref": "surface:dep-provenance.mjs",
