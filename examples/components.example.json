@@ -1,0 +1,9 @@
+{
+  "components": [
+    "eu-crypto",
+    "nordic-lib",
+    "left-pad",
+    "eu-declared",
+    "undeclared-x"
+  ]
+}

@@ -2,10 +2,10 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "$profile": "cyclonedx-lite (podzbior: bez services/vulnerabilities/compositions)",
-  "serialNumber": "urn:uuid:f34feb96-0865-4206-89e7-200a434428c5",
+  "serialNumber": "urn:uuid:dcb14148-33bd-45c2-a579-769260745fc6",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-07-19T09:05:37.812Z",
+    "timestamp": "2026-07-19T09:37:29.285Z",
     "tools": [
       {
         "vendor": "K0NSULT",
@@ -34,11 +34,39 @@
       },
       {
         "name": "k0nsult:stats",
-        "value": "{\"total\":13,\"files_html\":0,\"data_json\":1,\"code_files\":3,\"other_files\":9,\"node_libraries\":0}"
+        "value": "{\"total\":18,\"files_html\":0,\"data_json\":3,\"code_files\":6,\"other_files\":9,\"node_libraries\":0}"
       }
     ]
   },
   "components": [
+    {
+      "type": "file",
+      "bom-ref": "surface:dep-provenance.mjs",
+      "name": "dep-provenance.mjs",
+      "group": "code",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "83a5a723e1ce7ece55d9a2397d1951d309a185824c7d6eaf286931be29d14494"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "dep-provenance.mjs"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "17070"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
     {
       "type": "file",
       "bom-ref": "surface:docs/DEP-PROVENANCE-SPEC.md",
@@ -49,7 +77,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "2af349267f696d6e4ce5ec4b20049a7afc18b444adca00136e24944fc1e2f2fb"
+          "content": "7dbf8f62db77794ae9e96b30b2d14c4e7523f8bf9653dafd48a0876c50e5ed3c"
         }
       ],
       "properties": [
@@ -59,7 +87,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "10677"
+          "value": "2901"
         },
         {
           "name": "k0nsult:surface",
@@ -77,7 +105,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "e955839a6d80e400a77e7978db4503728a178bd448f82a19a0099cfde682eeec"
+          "content": "427bbc34d325317b8a502d10c224e5d424968adfd0904bd15f46bfc7286f0bcb"
         }
       ],
       "properties": [
@@ -87,7 +115,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "9290"
+          "value": "2310"
         },
         {
           "name": "k0nsult:surface",
@@ -105,7 +133,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "33e54645dc93becd785f3a8817351b8c0ac9fcbb2ef6fe54a4333b00be552a92"
+          "content": "c5a3f203fe148e756c8d1cf3477e65d5c1310fc6f7afc2188092baec5a160010"
         }
       ],
       "properties": [
@@ -115,7 +143,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "11447"
+          "value": "3112"
         },
         {
           "name": "k0nsult:surface",
@@ -172,6 +200,62 @@
         {
           "name": "k0nsult:bytes",
           "value": "13222"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "bom-ref": "surface:examples/components.example.json",
+      "name": "components.example.json",
+      "group": "data",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d0f1cb1133b57bc74789fee2c8aabe4163183b47b51e910baef24bdde275fa6a"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "examples/components.example.json"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "115"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "bom-ref": "surface:examples/declarations.example.json",
+      "name": "declarations.example.json",
+      "group": "data",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "79a67040175919fba8d8d5d9100d7be82b5a9ba381ed814dcd4b75d3b26c20e6"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "examples/declarations.example.json"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "343"
         },
         {
           "name": "k0nsult:surface",
@@ -293,6 +377,34 @@
     },
     {
       "type": "file",
+      "bom-ref": "surface:procurement-check.mjs",
+      "name": "procurement-check.mjs",
+      "group": "code",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3d988bb35798968d98294c7aed4366de34ee5278a8474e8f6578c1b715d7f292"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "procurement-check.mjs"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "11370"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
       "bom-ref": "surface:README.md",
       "name": "README.md",
       "group": "other",
@@ -312,6 +424,34 @@
         {
           "name": "k0nsult:bytes",
           "value": "2334"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "surface:sbom-expose.mjs",
+      "name": "sbom-expose.mjs",
+      "group": "code",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "46eaa7a8cf129a9e39a0af41ceb222ce69c6a40bf750a50820bfc3a9430f46a2"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "sbom-expose.mjs"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "15099"
         },
         {
           "name": "k0nsult:surface",

@@ -1,0 +1,8 @@
+{
+  "components": [
+    { "component": "eu-crypto", "entity": "Fundacja PL", "country": "PL" },
+    { "component": "nordic-lib", "entity": "Norsk AS", "country": "NO" },
+    { "component": "left-pad", "entity": "OpenJS Foundation", "country": "US" },
+    { "component": "eu-declared", "entity": "Verein DE", "jurisdiction_class": "EU" }
+  ]
+}
