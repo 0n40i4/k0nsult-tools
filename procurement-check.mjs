@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
 // procurement-check.mjs
 // K0NSULT open commons — procurement acceptance check (offer manifest scoring).
 //

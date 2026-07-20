@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
 // sbom-expose.mjs — K0NSULT open commons tool
 // Doktryna: claim<=proof. Ekspozycja komponentow SBOM wobec LOKALNEJ migawki podatnosci.
 // ZERO sieci, ZERO zaleznosci (tylko wbudowane: fs, path). Deterministyczne, offline.

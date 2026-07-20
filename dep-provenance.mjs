@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
 // dep-provenance.mjs — K0NSULT open commons tool
 // ---------------------------------------------------------------------------
 // Klasyfikuje jurisdiction_class (EU | EEA | non-EU | UNKNOWN) per KOMPONENT /
@@ -11,10 +12,13 @@
 //  - silnik ukryty         : brak kodu k0nsult.cloud, brak sekretów, offline
 //
 // TWARDY ZAKAZ: narzędzie NIGDY nie klasyfikuje narodowości OSOBY (człowieka).
-//  Jeśli JAKAKOLWIEK deklaracja zawiera (na dowolnym poziomie zagnieżdżenia)
-//  klucz: person | natural_person | nationality_of_person | nationality
-//  => ABORT z błędem (throw / exit 1). Jurysdykcja PODMIOTU deklarowana jest
-//  polem `country` / `region` / `jurisdiction_class`, NIGDY narodowością osoby.
+//  (a) component/entity MUSI być identyfikatorem maszynowym (DID/URI/pakiet/
+//      domena, bez spacji) — nazwisko/nazwa w wolnym tekście => ABORT.
+//  (b) klucz zawierający dane osoby (person, nationality, citizen, pesel, gender,
+//      first_name, email, … — substring) na dowolnym poziomie => ABORT.
+//  (c) wartość o kształcie e-maila / 11-cyfr(PESEL) / telefonu => ABORT.
+//  Jurysdykcja PODMIOTU deklarowana jest polem `country` / `region` /
+//  `jurisdiction_class`, NIGDY narodowością osoby. (audyt roxkon/RSpace #1)
 //
 // Zero zależności — wyłącznie moduły wbudowane Node >= 18: fs, path.
 // Deterministyczne, offline (zero sieci). --selftest = dowód działania.
@@ -36,24 +40,53 @@ const EU_COUNTRIES = new Set([
 // EOG poza UE: Islandia, Liechtenstein, Norwegia.
 const EEA_ONLY_COUNTRIES = new Set(['IS', 'LI', 'NO']);
 
-// --- TWARDY ZAKAZ: klucze wskazujące na OSOBĘ (człowieka) -------------------
-// Ich obecność w JAKIEJKOLWIEK deklaracji = natychmiastowy ABORT.
-// Klucze porównujemy PO normalizacji `normKey` (lowercase + [\s-]->_), więc
-// wpisujemy TYLKO postać znormalizowaną. Dodatkowo trzymamy postać
-// "sklejoną" (bez separatorów) — tak jak conformance.mjs — żeby wariant
-// camelCase (naturalPerson -> naturalperson) też trafiał w zakaz.
-const FORBIDDEN_PERSON_KEYS = new Set([
-  'person',
-  'natural_person', 'naturalperson',
-  'nationality_of_person', 'nationalityofperson',
-  'nationality',
+// --- TWARDY ZAKAZ: dane OSOBY (człowieka) -----------------------------------
+// Obecność w JAKIEJKOLWIEK deklaracji = natychmiastowy ABORT (agents-not-people,
+// AI Act art. 5). Wykrywanie na DWA sposoby, bo audyt roxkon/RSpace (issue #1,
+// HIGH dep-provenance:45-50) pokazał, że wąski denylist 4 kluczy przepuszczał
+// `person_nationality`, `citizenship`, `gender`, `pesel`, `first_name`, `email`,
+// `ethnicity`:
+//   (A) SUBSTRING w znormalizowanym kluczu — łapie warianty (person_nationality,
+//       nationalityOfCitizen, home_address, dateOfBirth) bez wyliczania wszystkich.
+//   (B) VALUE-SCAN — wartość o kształcie e-maila/PESEL/telefonu => ABORT (osoba
+//       jako WARTOŚĆ, nie klucz — HIGH dep-provenance:156-214).
+// Normalizacja: lowercase + [\s-]->_ ; substring działa też na camelCase po
+// lowercase (personNationality -> personnationality zawiera 'person'+'nationality').
+const normKey = (k) => String(k).toLowerCase().replace(/[\s-]/g, '_');
+
+const FORBIDDEN_KEY_SUBSTRINGS = Object.freeze([
+  'person', 'nationality', 'citizen', 'ethnic', 'religion', 'gender',
+  'pesel', 'passport', 'national_id', 'nationalid', 'ssn', 'tax_id', 'vat_person',
+  'first_name', 'firstname', 'last_name', 'lastname', 'surname', 'maiden',
+  'given_name', 'givenname', 'family_name', 'familyname', 'full_name', 'fullname',
+  'date_of_birth', 'dateofbirth', 'birthdate', 'dob',
+  'email', 'e_mail', 'phone', 'mobile', 'telephone',
+  'home_address', 'postal_address', 'residence', 'person_address',
+  'race', 'sexual_orientation', 'political', 'health_data', 'biometric',
 ]);
 
-// Ta sama normalizacja co w conformance.mjs (k0nsult-uni0nai): lowercase +
-// zamiana białych znaków i myślników na podkreślenie. Dzięki niej
-// natural-person / "natural person" / naturalPerson normalizują się do postaci
-// obecnych w FORBIDDEN_PERSON_KEYS i również aborują.
-const normKey = (k) => String(k).toLowerCase().replace(/[\s-]/g, '_');
+// Value-scan: kształt danych osobowych w WARTOŚCI (dowolny poziom). Ograniczony
+// (cap długości) — regexy liniowe, bez ReDoS.
+const MAX_VALUE_LEN = 4096;
+const EMAIL_RE = /[^\s@]+@[^\s@]+\.[a-z]{2,}/i;
+const PESEL_RE = /(?:^|\D)\d{11}(?:\D|$)/;
+const PHONE_RE = /(?:^|\D)\+?\d(?:[\s-]?\d){8,13}(?:\D|$)/;
+
+// Identyfikator MASZYNOWY (DID/URI/pakiet/domena) — NIE wolny tekst / nazwisko.
+// Audyt HIGH dep-provenance:156-214: `entity:"Jan Kowalski"` był klasyfikowany
+// jako EU/non-EU = de facto narodowość osoby. Wymóg id maszynowego odrzuca
+// nazwiska i nazwy organizacji w wolnym tekście (spacja => ABORT).
+const MACHINE_ID_RE = /^@?[A-Za-z0-9][A-Za-z0-9._:/+~-]*$/;
+function assertMachineId(id) {
+  const s = String(id);
+  if (/\s/.test(s) || !MACHINE_ID_RE.test(s)) {
+    throw new DeclarationError(
+      `component/entity "${s}" nie jest identyfikatorem maszynowym ` +
+        `(DID/URI/pakiet/domena, bez spacji). Narzędzie klasyfikuje KOMPONENTY, ` +
+        `NIE nazwiska ani nazwy podmiotów w wolnym tekście (agents-not-people).`,
+    );
+  }
+}
 
 class PersonDataError extends Error {
   constructor(keyPath) {
@@ -78,6 +111,16 @@ class DeclarationError extends Error {
 // --- Głęboki skan zakazanych kluczy osobowych -------------------------------
 // Rzuca PersonDataError przy pierwszym trafieniu (dowolny poziom zagnieżdżenia).
 function assertNoPersonData(value, pathPrefix = '') {
+  // (B) VALUE-SCAN: skalarna wartość tekstowa o kształcie danych osobowych
+  // (osoba jako WARTOŚĆ pod dozwolonym kluczem — HIGH dep-provenance:156-214).
+  if (typeof value === 'string') {
+    if (value.length <= MAX_VALUE_LEN) {
+      if (EMAIL_RE.test(value)) throw new PersonDataError(`${pathPrefix} (wartość=email)`);
+      if (PESEL_RE.test(value)) throw new PersonDataError(`${pathPrefix} (wartość=11-cyfr/PESEL)`);
+      if (PHONE_RE.test(value)) throw new PersonDataError(`${pathPrefix} (wartość=telefon)`);
+    }
+    return;
+  }
   if (value === null || typeof value !== 'object') return;
   if (Array.isArray(value)) {
     for (let i = 0; i < value.length; i++) {
@@ -87,8 +130,11 @@ function assertNoPersonData(value, pathPrefix = '') {
   }
   for (const key of Object.keys(value)) {
     const norm = normKey(key);
-    if (FORBIDDEN_PERSON_KEYS.has(norm)) {
-      throw new PersonDataError(pathPrefix ? `${pathPrefix}.${key}` : key);
+    // (A) SUBSTRING w znormalizowanym kluczu (łapie warianty i camelCase)
+    for (const bad of FORBIDDEN_KEY_SUBSTRINGS) {
+      if (norm.includes(bad)) {
+        throw new PersonDataError(pathPrefix ? `${pathPrefix}.${key}` : key);
+      }
     }
     assertNoPersonData(value[key], pathPrefix ? `${pathPrefix}.${key}` : key);
   }
@@ -190,6 +236,7 @@ function buildDeclarationMap(root) {
         `Deklaracja #${i} bez pola component/entity — brak identyfikatora.`,
       );
     }
+    assertMachineId(key);
     if (map.has(key)) {
       throw new DeclarationError(
         `Zduplikowana deklaracja dla "${key}".`,
@@ -206,6 +253,7 @@ function buildDeclarationMap(root) {
 function classifyComponents(componentNames, declMap) {
   return componentNames.map((nameRaw) => {
     const name = String(nameRaw).trim();
+    assertMachineId(name);
     if (declMap.has(name)) {
       return { component: name, jurisdiction_class: declMap.get(name).jurisdiction_class, declared: true };
     }
@@ -266,10 +314,10 @@ function runSelftest() {
     assert(results[0].declared === true, 'oczekiwano declared=true');
   });
 
-  // (1b) POZYTYWNY: jawne jurisdiction_class=EU
+  // (1b) POZYTYWNY: jawne jurisdiction_class=EU (entity = id maszynowy DID)
   check('komponent EU (jurisdiction_class=EU)', () => {
-    const root = [{ entity: 'Foundation EU', jurisdiction_class: 'EU' }];
-    const { results } = classify({ declarationsRoot: root, components: ['Foundation EU'] });
+    const root = [{ entity: 'did:example:foundation-eu', jurisdiction_class: 'EU' }];
+    const { results } = classify({ declarationsRoot: root, components: ['did:example:foundation-eu'] });
     assert(results[0].jurisdiction_class === 'EU', 'oczekiwano EU');
   });
 
@@ -388,6 +436,73 @@ function runSelftest() {
     assert(threw, "oczekiwano PersonDataError dla 'nationality of person'");
   });
 
+  // ── Wektory z audytu roxkon/RSpace (issue #1, HIGH dep-provenance) ────────
+
+  // (3h) NEGATYWNY [audyt HIGH:156-214]: entity = NAZWISKO OSOBY (wolny tekst)
+  // => ABORT. To był nośny obejście: `entity:"Jan Kowalski",country:"DE"` dawał
+  // "Jan Kowalski=EU" = de facto narodowość osoby. Teraz wymóg id maszynowego.
+  check('NEGATYWNY: entity="Jan Kowalski" (nazwisko) => ABORT', () => {
+    const root = [{ entity: 'Jan Kowalski', country: 'DE' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['Jan Kowalski'] }); }
+    catch (e) { threw = e instanceof DeclarationError; }
+    assert(threw, 'oczekiwano DeclarationError (nie-id maszynowy)');
+  });
+
+  // (3i) NEGATYWNY [audyt HIGH:45-50]: klucz `person_nationality` => ABORT
+  check('NEGATYWNY: person_nationality => ABORT', () => {
+    const root = [{ component: 'lib-a', person_nationality: 'German', country: 'DE' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['lib-a'] }); }
+    catch (e) { threw = e instanceof PersonDataError; }
+    assert(threw, 'oczekiwano PersonDataError dla person_nationality');
+  });
+
+  // (3j) NEGATYWNY [audyt HIGH:45-50]: klucz `citizenship` => ABORT
+  check('NEGATYWNY: citizenship => ABORT', () => {
+    const root = [{ component: 'lib-b', citizenship: 'PL' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['lib-b'] }); }
+    catch (e) { threw = e instanceof PersonDataError; }
+    assert(threw, 'oczekiwano PersonDataError dla citizenship');
+  });
+
+  // (3k) NEGATYWNY [audyt HIGH:45-50]: klucz `gender` => ABORT
+  check('NEGATYWNY: gender => ABORT', () => {
+    const root = [{ component: 'lib-c', gender: 'F', country: 'PL' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['lib-c'] }); }
+    catch (e) { threw = e instanceof PersonDataError; }
+    assert(threw, 'oczekiwano PersonDataError dla gender');
+  });
+
+  // (3l) NEGATYWNY [audyt HIGH:45-50]: klucz `pesel` => ABORT
+  check('NEGATYWNY: pesel (klucz) => ABORT', () => {
+    const root = [{ component: 'lib-d', pesel: '00000000000' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['lib-d'] }); }
+    catch (e) { threw = e instanceof PersonDataError; }
+    assert(threw, 'oczekiwano PersonDataError dla pesel');
+  });
+
+  // (3m) NEGATYWNY [value-scan]: e-mail w WARTOŚCI pod dozwolonym kluczem => ABORT
+  check('NEGATYWNY: wartość e-mail => ABORT', () => {
+    const root = [{ component: 'lib-e', contact: 'jan.kowalski@example.com', country: 'PL' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['lib-e'] }); }
+    catch (e) { threw = e instanceof PersonDataError; }
+    assert(threw, 'oczekiwano PersonDataError dla wartości e-mail');
+  });
+
+  // (3n) NEGATYWNY [value-scan]: 11 cyfr (PESEL) w WARTOŚCI => ABORT
+  check('NEGATYWNY: wartość 11-cyfr/PESEL => ABORT', () => {
+    const root = [{ component: 'lib-f', ref: 'id 44051401359 x', country: 'PL' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['lib-f'] }); }
+    catch (e) { threw = e instanceof PersonDataError; }
+    assert(threw, 'oczekiwano PersonDataError dla wartości 11-cyfr');
+  });
+
   // (4) STRAŻNIK: jawne jurisdiction_class="UNKNOWN" jest zakazane
   check('jawne UNKNOWN => DeclarationError', () => {
     const root = [{ component: 'w', jurisdiction_class: 'UNKNOWN' }];
@@ -444,8 +559,10 @@ Klasy: EU | EEA | non-EU | UNKNOWN   (brak deklaracji => UNKNOWN, neutralny)
 --selftest      Uruchamia wbudowane testy (pozytywne + NEGATYWNE) i kończy
                 exit(0) gdy OK, exit(1) gdy błąd.
 
-TWARDY ZAKAZ: deklaracja z polem person/natural_person/nationality_of_person/
-nationality => ABORT (agents-not-people; ZERO klasyfikacji narodowości OSOBY).
+TWARDY ZAKAZ (agents-not-people; ZERO klasyfikacji narodowości OSOBY):
+  - component/entity musi być id maszynowym (DID/URI/pakiet/domena, bez spacji);
+  - klucz z danymi osoby (person/nationality/citizen/pesel/gender/first_name/…) => ABORT;
+  - wartość-e-mail / 11-cyfr(PESEL) / telefon => ABORT.
 `;
 
 function readJson(pathArg) {

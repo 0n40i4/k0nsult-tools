@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
 // make_bundle.mjs — buduje kanoniczny Regulator Evidence Bundle (REB).
 // GRANICA: NIE podpisuje. NIE dotyka kluczy. Liczy SHA-256 + kanoniczny manifest.
 // Podpis sklada operator wlasnym kluczem (No Password Custody, Human Override).

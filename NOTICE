@@ -6,14 +6,21 @@ Licensed under the Apache License, Version 2.0 (see LICENSE).
 ================================================================================
 SCOPE
 ================================================================================
-This repository contains ONLY reusable, self-contained tooling:
-  - sbom.mjs          — CycloneDX-lite SBOM generator (per-file SHA-256), zero deps
-  - make_bundle.mjs   — deterministic evidence-bundle manifest builder
-  - verify_bundle.mjs — independent bundle verifier (organ / third party)
+This repository contains reusable, self-contained tooling (zero runtime deps),
+plus its schema/, docs/ and examples/. The executable tools are:
+  - sbom.mjs            — CycloneDX-lite SBOM generator (per-file SHA-256; --verify)
+  - make_bundle.mjs     — deterministic evidence-bundle manifest builder
+  - verify_bundle.mjs   — independent bundle verifier (organ / third party)
+  - attest-verify.mjs   — attestation verifier (never signs; UNSIGNED_DRAFT/HALT_FOR_ACK)
+  - dep-provenance.mjs  — jurisdiction_class per component (agents-not-people; no person scoring)
+  - procurement-check.mjs — procurement readiness checklist
+  - sbom-expose.mjs     — SBOM exposure/diff helper
 
 The proprietary K0NSULT orchestration engine (k0nsult.cloud) is NOT part of this
 repository and is never open-sourced. These generators operate on any directory
 you point them at (`--root <path>`); they carry no engine code, no data, no keys.
+LICENSE (Apache-2.0) covers the entire repository; this list is descriptive, not
+a limitation of scope.
 
 ================================================================================
 DOCTRINE (invariant)

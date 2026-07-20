@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
 // verify_bundle.mjs — strona ORGANU / niezalezny podmiot. Odtwarza hasze artefaktow
 // z manifestu i sprawdza zgodnosc + (opcjonalnie) podpis. Zero zaleznosci. Node >= 18.
 import { readFileSync } from 'node:fs';
