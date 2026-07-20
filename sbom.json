@@ -2,10 +2,10 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "$profile": "cyclonedx-lite (podzbior: bez services/vulnerabilities/compositions)",
-  "serialNumber": "urn:uuid:853eecd7-7d6a-4fab-a637-2fb19c2a5289",
+  "serialNumber": "urn:uuid:a0a43b86-8f24-40bd-a767-dc82b67f4c1b",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-07-20T13:31:57.147Z",
+    "timestamp": "2026-07-20T15:13:49.650Z",
     "tools": [
       {
         "vendor": "K0NSULT",
@@ -45,7 +45,7 @@
       },
       {
         "name": "k0nsult:stats",
-        "value": "{\"total\":21,\"files_html\":0,\"data_json\":3,\"code_files\":7,\"other_files\":11,\"node_libraries\":0}"
+        "value": "{\"total\":22,\"files_html\":0,\"data_json\":3,\"code_files\":7,\"other_files\":12,\"node_libraries\":0}"
       }
     ]
   },
@@ -156,7 +156,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "7dbf8f62db77794ae9e96b30b2d14c4e7523f8bf9653dafd48a0876c50e5ed3c"
+          "content": "1e254dc935d714a628f54492bc26ef7373936f8b037471e5dbc8d8b3bfabc85f"
         }
       ],
       "properties": [
@@ -166,7 +166,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "2901"
+          "value": "5719"
         },
         {
           "name": "k0nsult:eol",
@@ -188,7 +188,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "427bbc34d325317b8a502d10c224e5d424968adfd0904bd15f46bfc7286f0bcb"
+          "content": "1a7a32d1608a0072a11832b18bed1f0ef09a91d4be406aa67393f8dd21776f0d"
         }
       ],
       "properties": [
@@ -198,7 +198,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "2310"
+          "value": "3894"
         },
         {
           "name": "k0nsult:eol",
@@ -220,7 +220,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "c5a3f203fe148e756c8d1cf3477e65d5c1310fc6f7afc2188092baec5a160010"
+          "content": "97a011a7c50d0057fb3e3997579ccacc8c3970364898dcb15046154b8e473273"
         }
       ],
       "properties": [
@@ -230,7 +230,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "3112"
+          "value": "5958"
         },
         {
           "name": "k0nsult:eol",
@@ -476,7 +476,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "56e29ca70d6f88fcee1b9f8392e6c33d62de3cfc5027c6ac6452f5e6e42a6047"
+          "content": "c31f812c9e88114d8a78df7cab45fe38fc33b083a82ac541cce1781ac01ab0c9"
         }
       ],
       "properties": [
@@ -486,7 +486,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "1807"
+          "value": "2030"
         },
         {
           "name": "k0nsult:eol",
@@ -679,6 +679,38 @@
         {
           "name": "k0nsult:bytes",
           "value": "1953"
+        },
+        {
+          "name": "k0nsult:eol",
+          "value": "lf-normalized"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "surface:SECURITY.md",
+      "name": "SECURITY.md",
+      "group": "other",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1d3f7824cc54028465681be7d480ffa4c05ce172a93d8ee1698e1a8d8ecc1263"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": "SECURITY.md"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "619"
         },
         {
           "name": "k0nsult:eol",
