@@ -19,6 +19,9 @@ plus its schema/, docs/ and examples/. The executable tools are:
 The proprietary K0NSULT orchestration engine (k0nsult.cloud) is NOT part of this
 repository and is never open-sourced. These generators operate on any directory
 you point them at (`--root <path>`); they carry no engine code, no data, no keys.
+The ipIII evidence-attestation module is a COMMERCIAL product currently for sale;
+it is NOT open-sourced and NOT covered by the Apache-2.0 grant here (open-source
+only conditionally, if unsold — operator Human Override).
 LICENSE (Apache-2.0) covers the entire repository; this list is descriptive, not
 a limitation of scope.
 
