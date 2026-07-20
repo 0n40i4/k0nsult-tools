@@ -83,8 +83,10 @@ function classify(rel) {
 
 function buildFileComponents() {
   const components = [];
+  const META_FILES = new Set(['publiccode.yml', 'index.json']); // metadane o repo, nie „software"
   for (const f of listFiles(ROOT, { recursive: true })) {
     if (path.resolve(f) === OUT) continue;        // nie inwentaryzuj wlasnego outputu
+    if (META_FILES.has(path.basename(f))) continue; // publiccode.yml odwoluje sie do hasha sbom -> wyklucz (anty-cykl)
     const raw = fs.readFileSync(f);
     const buf = contentForHash(raw);              // CRLF->LF (jak swiezy klon eol=lf)
     const rel = relPosix(f);
