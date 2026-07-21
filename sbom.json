@@ -2,10 +2,10 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "$profile": "cyclonedx-lite (podzbior: bez services/vulnerabilities/compositions)",
-  "serialNumber": "urn:uuid:4bddff94-e6dc-4703-8b27-670609774a55",
+  "serialNumber": "urn:uuid:cadedf78-a0e3-4ddb-a6a3-093810940851",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-07-20T16:49:30.274Z",
+    "timestamp": "2026-07-21T16:38:39.217Z",
     "tools": [
       {
         "vendor": "K0NSULT",
@@ -45,7 +45,7 @@
       },
       {
         "name": "k0nsult:stats",
-        "value": "{\"total\":22,\"files_html\":0,\"data_json\":3,\"code_files\":7,\"other_files\":12,\"node_libraries\":0}"
+        "value": "{\"total\":23,\"files_html\":0,\"data_json\":3,\"code_files\":7,\"other_files\":13,\"node_libraries\":0}"
       }
     ]
   },
@@ -71,6 +71,38 @@
         {
           "name": "k0nsult:bytes",
           "value": "127"
+        },
+        {
+          "name": "k0nsult:eol",
+          "value": "lf-normalized"
+        },
+        {
+          "name": "k0nsult:surface",
+          "value": "open-source"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "bom-ref": "surface:.github/workflows/verify.yml",
+      "name": "verify.yml",
+      "group": "other",
+      "version": "1.0.0",
+      "scope": "required",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8406b6124728e2d134271756c519ac50ad0f0a76d30bee9960782cb47cc98046"
+        }
+      ],
+      "properties": [
+        {
+          "name": "k0nsult:path",
+          "value": ".github/workflows/verify.yml"
+        },
+        {
+          "name": "k0nsult:bytes",
+          "value": "1546"
         },
         {
           "name": "k0nsult:eol",
@@ -444,7 +476,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "abb41eb3a3999b4d0bbbdeb46a31696988df2794edac29e4e044018d5bb5a3ed"
+          "content": "3c59ecd3cbcadda184237c450a488b19797b0908a18112c539dcd18eee9a20fc"
         }
       ],
       "properties": [
@@ -454,7 +486,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "4684"
+          "value": "10520"
         },
         {
           "name": "k0nsult:eol",
@@ -732,7 +764,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "8e18e4d3598bd8224d1adada4c1d34a78ef2fd314098c2909faf0158555f43cf"
+          "content": "5dc6830fe9a312ddff82cf599553ee1b4be2d18cda4e7a639c220b41bcd7cebb"
         }
       ],
       "properties": [
@@ -742,7 +774,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "3112"
+          "value": "8489"
         },
         {
           "name": "k0nsult:eol",
