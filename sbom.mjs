@@ -189,7 +189,7 @@ function buildBom() {
       },
       properties: [
         { name: 'k0nsult:repo', value: REPO_NAME },
-        { name: 'k0nsult:scope', value: 'all files under root (recursive, excl. .git/node_modules) + node deps' },
+        { name: 'k0nsult:scope', value: 'files under root (recursive), excl. .git/node_modules and generator meta-files (publiccode.yml, index.json, *sbom.json — anti-cycle); + node deps' },
         { name: 'k0nsult:hash_basis', value: 'lf-normalized text (matches fresh clone with .gitattributes eol=lf); binary raw' },
         { name: 'k0nsult:license', value: 'Apache-2.0' },
       ],
