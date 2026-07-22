@@ -28,7 +28,13 @@ function argVal(flag, def) {
 // Default to the current working directory; override with --root <path>.
 const DEFAULT_ROOT = process.cwd();
 const ROOT = path.resolve(argVal('--root', DEFAULT_ROOT));
-const OUT = path.resolve(argVal('--out', path.join(__dirname, 'sbom.json')));
+// Audyt R2 (HIGH, znaleziony po naprawie MED self-exclusion): domyslne wyjscie bylo
+// zakotwiczone w KATALOGU SKRYPTU (__dirname), podczas gdy skanowany ROOT to cwd.
+// Uruchomienie `node ../k0nsult-tools/sbom.mjs` z innego repo skanowalo TAMTO repo, ale
+// nadpisywalo sbom.json W k0nsult-tools — ciche skazenie cudzego artefaktu dowodowego,
+// przy jednoczesnym pozostawieniu wlasnego SBOM-u nieaktualnym. To jest zrodlowa
+// przyczyna nieodtwarzalnych liczb komponentow. Wyjscie nalezy do SKANOWANEGO drzewa.
+const OUT = path.resolve(argVal('--out', path.join(ROOT, 'sbom.json')));
 // Relative repo name only — never leak the absolute host path (OS/user/dir layout, CWE-200).
 const REPO_NAME = path.basename(ROOT);
 
