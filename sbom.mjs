@@ -228,7 +228,9 @@ function verify() {
     if (c.hashes && c.hashes[0]) want.set(c['bom-ref'], c.hashes[0].content);
   }
   const fresh = buildFileComponents();
-  let mismatch = 0, missing = 0, checked = 0;
+  const have = new Set(fresh.map((c) => c['bom-ref']));
+  let mismatch = 0, missing = 0, deleted = 0, checked = 0;
+  // Przebieg 1 (drzewo -> sbom): nowe/zmienione pliki wzgledem SBOM.
   for (const c of fresh) {
     const ref = c['bom-ref'];
     if (!want.has(ref)) { missing++; console.error('NOWY (brak w sbom):', ref); continue; }
@@ -238,8 +240,14 @@ function verify() {
       console.error('NIEZGODNY hash:', ref);
     }
   }
-  console.log(`verify: sprawdzono ${checked}, NIEZGODNE=${mismatch}, brakujace-w-sbom=${missing}`);
-  if (mismatch === 0 && missing === 0) { console.log('✓ recompute -> exact match'); process.exit(0); }
+  // Przebieg 2 (sbom -> drzewo): pliki zadeklarowane w SBOM, ale USUNIETE z drzewa.
+  // Bez tego --verify byl JEDNOKIERUNKOWY: skasowanie pliku (nawet LICENSE) dawalo
+  // "exact match". Audytor uruchamiajacy ta komende musi zobaczyc brak. (audyt roju, HIGH)
+  for (const ref of want.keys()) {
+    if (!have.has(ref)) { deleted++; console.error('USUNIETY (w sbom, brak w drzewie):', ref); }
+  }
+  console.log(`verify: sprawdzono ${checked}, NIEZGODNE=${mismatch}, brakujace-w-sbom=${missing}, usuniete-z-drzewa=${deleted}`);
+  if (mismatch === 0 && missing === 0 && deleted === 0) { console.log('✓ recompute -> exact match (dwukierunkowo)'); process.exit(0); }
   process.exit(1);
 }
 
