@@ -3,7 +3,7 @@
 publiccodeYmlVersion: '0.4'
 name: 'k0nsult-tools'
 url: 'https://github.com/0n40i4/k0nsult-tools'
-releaseDate: '2026-07-21'
+releaseDate: '2026-07-22'
 softwareVersion: '1.0.0'
 developmentStatus: 'development'
 softwareType: 'standalone/other'
@@ -37,14 +37,14 @@ x-k0nsult:
   evidence_reason: 'manifest hash + CycloneDX-1.5 SBOM + Apache-2.0 verified'
   manifest:
     path: 'sbom.json'
-    hash: 'sha256:d67daf8e3ac7a8b33f6a2236e23874e98d4e6a3ec29c399468277883e7f0cb3f'
+    hash: 'sha256:b2b23026e9930f4ca91b5c382d1dc291ffcc44eb9629badcf4f3feda5be197e1'
     hash_alg: 'sha256'
   sbom:
     format: 'CycloneDX-1.5'
     path: 'sbom.json'
-    url: 'https://github.com/0n40i4/k0nsult-tools/blob/master/sbom.json'
-    hash: 'sha256:46cbfa4ca92c478462b5f1941d15746b75eed075460c4afc457812352e89ff4c'
+    url: 'https://github.com/0n40i4/k0nsult-tools/blob/main/sbom.json'
+    hash: 'sha256:dd4a90d04da43c0db117b382787a76c92cf11786ed2f67fe4e7217935b09262d'
   provenance_chain:
-    - manifest_hash: 'sha256:d67daf8e3ac7a8b33f6a2236e23874e98d4e6a3ec29c399468277883e7f0cb3f'
-      recorded_at: '2026-07-21T16:38:39.217Z'
+    - manifest_hash: 'sha256:b2b23026e9930f4ca91b5c382d1dc291ffcc44eb9629badcf4f3feda5be197e1'
+      recorded_at: '2026-07-22T01:12:43.222Z'
       prev: null
