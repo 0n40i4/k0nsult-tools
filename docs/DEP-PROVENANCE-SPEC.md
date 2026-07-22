@@ -40,30 +40,46 @@ EN:
 
 ## TWARDY ZAKAZ (fail-fast) / HARD PROHIBITION (fail-fast)
 
-PL: Jeśli JAKAKOLWIEK deklaracja zawiera — na **dowolnym poziomie zagnieżdżenia** —
-klucz:
+PL: Cztery rozłączne strażniki. Każdy ma w `--selftest` **wektor izolujący**
+(wyłączenie tego jednego strażnika wywala dokładnie jeden test):
 
-- `person`
-- `natural_person`
-- `nationality_of_person`
-- `nationality`
+| id | reguła | błąd |
+|----|--------|------|
+| `GUARD-KEY` | klucz na **dowolnym poziomie** zawierający (jako substring, po normalizacji `lowercase` + `[\s-]→_`) termin osobowy: `person`, `nationality`, `citizen`, `gender`, `pesel`, `passport`, `first_name`, `date_of_birth`, `email`, `phone`, `biometric`, … | `PersonDataError` |
+| `GUARD-VALUE` | wartość skalarna o kształcie **e-maila**, **PESEL-u** (suma kontrolna + poprawna część datowa, skanowana w każdym oknie 11 cyfr wewnątrz ciągu cyfr dowolnej długości) lub **telefonu** (9–14 cyfr z separatorami) | `PersonDataError` |
+| `GUARD-ID-A` | **wartość** `component`/`entity` zawiera termin osobowy (np. `did:person:fatou.diop`) | `PersonDataError` |
+| `GUARD-ID-B` | `component` **oraz** `entity` muszą należeć do **allowlisty przestrzeni nazw**: `pkg:…` (Package URL, `@wersja` dozwolona w środku), `did:…`, `https://…`. Gołe (`left-pad`, `JanKowalski`), kropkowane (`jan.kowalski`, `example.com`) i zawierające spację (`Jan Kowalski`) => ODRZUCONE | `DeclarationError` |
 
-=> narzędzie **przerywa** (`PersonDataError`, `exit 1`) PRZED jakąkolwiek
-klasyfikacją i raportuje pełną ścieżkę klucza. Jurysdykcję PODMIOTU deklaruje
-się polem `country` / `region` / `jurisdiction_class`, **nigdy** narodowością
-człowieka.
+Strażniki działają **fail-fast, PRZED** jakąkolwiek klasyfikacją, i raportują
+pełną ścieżkę klucza. Jurysdykcję PODMIOTU deklaruje się polem
+`country` / `region` / `jurisdiction_class`, **nigdy** narodowością człowieka.
 
-EN: If ANY declaration contains — at **any nesting level** — the key:
+> ⚠️ **ZNANE OGRANICZENIE (KNOWN-LIMITATIONS.md).** Dopasowanie po stringu **nie
+> odróżnia nazwiska od nazwy pakietu**. Identyfikator w dozwolonej przestrzeni
+> nazw, który koduje nazwisko (`did:x:local:jan1kowalski:executor`), **przejdzie**
+> i zostanie sklasyfikowany. Allowlista **podnosi koszt** nadużycia, ale go **nie
+> eliminuje**. To jest ograniczenie strukturalne, nie „naprawione".
 
-- `person`
-- `natural_person`
-- `nationality_of_person`
-- `nationality`
+EN: Four disjoint guards. Each has an **isolating vector** in `--selftest`
+(disabling that one guard fails exactly one test):
 
-=> the tool **aborts** (`PersonDataError`, `exit 1`) BEFORE any classification
-and reports the full key path. The jurisdiction of an ENTITY is declared with
-the `country` / `region` / `jurisdiction_class` field, **never** with a
-person's nationality.
+| id | rule | error |
+|----|------|-------|
+| `GUARD-KEY` | a key at **any nesting level** containing (as a substring, after `lowercase` + `[\s-]→_` normalisation) a person term: `person`, `nationality`, `citizen`, `gender`, `pesel`, `passport`, `first_name`, `date_of_birth`, `email`, `phone`, `biometric`, … | `PersonDataError` |
+| `GUARD-VALUE` | a scalar value shaped like an **e-mail**, a **PESEL** (checksum + valid date part, scanned over every 11-digit window inside a digit run of any length) or a **phone number** (9–14 digits with separators) | `PersonDataError` |
+| `GUARD-ID-A` | the **value** of `component`/`entity` contains a person term (e.g. `did:person:fatou.diop`) | `PersonDataError` |
+| `GUARD-ID-B` | `component` **and** `entity` must belong to the **namespace allowlist**: `pkg:…` (Package URL, `@version` allowed mid-string), `did:…`, `https://…`. Bare (`left-pad`, `JanKowalski`), dotted (`jan.kowalski`, `example.com`) and space-containing (`Jan Kowalski`) identifiers are REJECTED | `DeclarationError` |
+
+The guards are **fail-fast, BEFORE** any classification, and report the full key
+path. The jurisdiction of an ENTITY is declared with the
+`country` / `region` / `jurisdiction_class` field, **never** with a person's
+nationality.
+
+> ⚠️ **KNOWN LIMITATION (KNOWN-LIMITATIONS.md).** String matching **cannot
+> distinguish a surname from a package name**. An identifier inside an allowed
+> namespace that encodes a surname (`did:x:local:jan1kowalski:executor`) **will
+> pass** and be classified. The allowlist **raises the cost** of misuse; it does
+> **not eliminate** it. This is a structural limitation, not "fixed".
 
 ## Wejście: `--declarations <plik.json>` / Input: `--declarations <file.json>`
 
@@ -113,15 +129,28 @@ EN:
 
 ## `--selftest`
 
-PL: Samowystarczalny (wbudowane fixtures, ZERO plików zewnętrznych). Uruchamia
-przypadki **pozytywne** (EU/EEA/non-EU), **neutralny** (brak deklaracji => UNKNOWN)
-oraz **NEGATYWNE** (pola osobowe => ABORT). `exit(0)` gdy wszystko przeszło,
-`exit(1)` gdy cokolwiek zawiodło.
+PL: Samowystarczalny (wbudowane fixtures, ZERO plików zewnętrznych), **27
+przypadków**: **pozytywne** (EU/EEA/non-EU, purl `pkg:npm/express@4.18.2`),
+**neutralny** (brak deklaracji => UNKNOWN) oraz **NEGATYWNE** (pola/wartości
+osobowe, identyfikatory poza allowlistą, duplikat deklaracji => ABORT).
+`exit(0)` gdy wszystko przeszło, `exit(1)` gdy cokolwiek zawiodło.
 
-EN: Self-contained (built-in fixtures, ZERO external files). Runs **positive**
-cases (EU/EEA/non-EU), a **neutral** case (no declaration => UNKNOWN) and
-**NEGATIVE** cases (person fields => ABORT). `exit(0)` when everything passed,
-`exit(1)` when anything failed.
+Przypadki oznaczone `[izolujący]` to **wektory mutacyjne**: wyłączenie
+odpowiadającego im pojedynczego strażnika (warunek → `if (false)`) wywala
+**dokładnie jeden** test. Wektory bez tego oznaczenia są **regresyjne** —
+potwierdzają werdykt, ale są współdzielone przez kilka strażników i **nie
+dowodzą**, że konkretny strażnik działa.
+
+EN: Self-contained (built-in fixtures, ZERO external files), **27 cases**:
+**positive** (EU/EEA/non-EU, purl `pkg:npm/express@4.18.2`), a **neutral** case
+(no declaration => UNKNOWN) and **NEGATIVE** cases (person keys/values,
+identifiers outside the allowlist, duplicate declaration => ABORT). `exit(0)`
+when everything passed, `exit(1)` when anything failed.
+
+Cases marked `[izolujący]` are **mutation vectors**: disabling the single
+corresponding guard (condition → `if (false)`) fails **exactly one** test.
+Unmarked vectors are **regression** vectors — they confirm the verdict but are
+shared between guards and therefore do **not** prove that a specific guard works.
 
 ```
 node dep-provenance.mjs --selftest

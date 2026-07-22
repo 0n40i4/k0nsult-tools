@@ -1,9 +1,9 @@
 {
   "components": [
-    "eu-crypto",
-    "nordic-lib",
-    "left-pad",
-    "eu-declared",
-    "undeclared-x"
+    "pkg:npm/eu-crypto@1.2.0",
+    "pkg:npm/nordic-lib@0.9.1",
+    "pkg:npm/left-pad@1.3.0",
+    "pkg:maven/org.example/eu-declared@2.0",
+    "pkg:npm/undeclared-x@0.0.1"
   ]
 }

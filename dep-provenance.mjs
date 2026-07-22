@@ -12,13 +12,21 @@
 //  - silnik ukryty         : brak kodu k0nsult.cloud, brak sekretów, offline
 //
 // TWARDY ZAKAZ: narzędzie NIGDY nie klasyfikuje narodowości OSOBY (człowieka).
-//  (a) component/entity MUSI być identyfikatorem maszynowym (DID/URI/pakiet/
-//      domena, bez spacji) — nazwisko/nazwa w wolnym tekście => ABORT.
-//  (b) klucz zawierający dane osoby (person, nationality, citizen, pesel, gender,
+//  (a) component ORAZ entity MUSZĄ należeć do ALLOWLISTY przestrzeni nazw
+//      identyfikatorów maszynowych (pkg: / did: / http(s)://) — gołe i kropkowane
+//      tokeny ("JanKowalski", "jan.kowalski", "Jan Kowalski") => ABORT.
+//  (b) wartość component/entity nie może zawierać terminu osobowego
+//      (person, nationality, citizen, …) — np. `did:person:...` => ABORT.
+//  (c) klucz zawierający dane osoby (person, nationality, citizen, pesel, gender,
 //      first_name, email, … — substring) na dowolnym poziomie => ABORT.
-//  (c) wartość o kształcie e-maila / 11-cyfr(PESEL) / telefonu => ABORT.
+//  (d) wartość o kształcie e-maila / PESEL (suma kontrolna) / telefonu => ABORT.
 //  Jurysdykcja PODMIOTU deklarowana jest polem `country` / `region` /
-//  `jurisdiction_class`, NIGDY narodowością osoby. (audyt roxkon/RSpace #1)
+//  `jurisdiction_class`, NIGDY narodowością osoby. (audyt roxkon/RSpace #1, #2)
+//
+// ⚠️ ZNANE OGRANICZENIE (patrz KNOWN-LIMITATIONS.md): dopasowanie po STRINGU
+// NIE odróżnia nazwiska od nazwy pakietu. `did:k0nsult:local:jan1kowalski:x`
+// przejdzie allowlistę. Guard PODNOSI KOSZT nadużycia, ale go NIE ELIMINUJE.
+// To jest KNOWN-LIMITATION, nie „naprawione".
 //
 // Zero zależności — wyłącznie moduły wbudowane Node >= 18: fs, path.
 // Deterministyczne, offline (zero sieci). --selftest = dowód działania.
@@ -69,21 +77,87 @@ const FORBIDDEN_KEY_SUBSTRINGS = Object.freeze([
 // (cap długości) — regexy liniowe, bez ReDoS.
 const MAX_VALUE_LEN = 4096;
 const EMAIL_RE = /[^\s@]+@[^\s@]+\.[a-z]{2,}/i;
-const PESEL_RE = /(?:^|\D)\d{11}(?:\D|$)/;
 const PHONE_RE = /(?:^|\D)\+?\d(?:[\s-]?\d){8,13}(?:\D|$)/;
 
-// Identyfikator MASZYNOWY (DID/URI/pakiet/domena) — NIE wolny tekst / nazwisko.
-// Audyt HIGH dep-provenance:156-214: `entity:"Jan Kowalski"` był klasyfikowany
-// jako EU/non-EU = de facto narodowość osoby. Wymóg id maszynowego odrzuca
-// nazwiska i nazwy organizacji w wolnym tekście (spacja => ABORT).
-const MACHINE_ID_RE = /^@?[A-Za-z0-9][A-Za-z0-9._:/+~-]*$/;
+// --- GUARD-PESEL ------------------------------------------------------------
+// Audyt R2 (MED): poprzedni `PESEL_RE = /(?:^|\D)\d{11}(?:\D|$)/` był W CAŁOŚCI
+// PRZESŁONIĘTY przez PHONE_RE (9–14 cyfr z opcjonalnymi separatorami). Każdy
+// ciąg 11 cyfr łapał najpierw/również telefon, więc USUNIĘCIE linii PESEL
+// zostawiało selftest 20/20 zielony => guard bez izolacji (test weryfikował
+// werdykt, nie regułę).
+// Naprawa: PESEL wykrywany po SUMIE KONTROLNEJ i części datowej w KAŻDYM oknie
+// 11 cyfr wewnątrz ciągu cyfr DOWOLNEJ długości. Dzięki temu istnieje wektor
+// rozłączny z PHONE_RE: ciąg >14 cyfr, którego PHONE_RE nie dopasuje z definicji
+// (kotwice `(?:^|\D)` / `(?:\D|$)` nie wejdą w środek ciągu cyfr).
+const PESEL_WEIGHTS = Object.freeze([1, 3, 7, 9, 1, 3, 7, 9, 1, 3]);
+function isPeselShaped(d) {
+  let sum = 0;
+  for (let i = 0; i < 10; i++) sum += PESEL_WEIGHTS[i] * Number(d[i]);
+  if ((10 - (sum % 10)) % 10 !== Number(d[10])) return false;
+  // Część datowa: MM z przesunięciem stulecia (+0/20/40/60/80), DD w 01..31.
+  const month = Number(d.slice(2, 4)) % 20;
+  const day = Number(d.slice(4, 6));
+  return month >= 1 && month <= 12 && day >= 1 && day <= 31;
+}
+function containsPesel(value) {
+  const runs = value.match(/\d+/g);
+  if (!runs) return false;
+  for (const run of runs) {
+    for (let i = 0; i + 11 <= run.length; i++) {
+      if (isPeselShaped(run.slice(i, i + 11))) return true;
+    }
+  }
+  return false;
+}
+
+// --- GUARD-ID-A / GUARD-ID-B: identyfikator component/entity ----------------
+// Audyt R2 (HIGH): poprzedni guard „musi być id maszynowym" był KOSMETYCZNY —
+// jedyną barierą była SPACJA. Przechodziły: "JanKowalski", "jan.kowalski",
+// "did:person:fatou.diop", "did:k0nsult:local:jan1kowalski:executor". Ten sam
+// guard był jednocześnie ZA MOCNY: odrzucał poprawny Package URL
+// `pkg:npm/express@4.18.2` (MACHINE_ID_RE dopuszczał `@` tylko na pozycji 0),
+// czyli format podawany we własnym --help.
+//
+// GUARD-ID-A: termin osobowy w WARTOŚCI identyfikatora (did:person:… itd.).
+// Podzbiór FORBIDDEN_KEY_SUBSTRINGS — wyłączone terminy krótkie/wieloznaczne,
+// które dają fałszywe trafienia w nazwach pakietów ('race' ⊂ 'trace-events',
+// 'email' ⊂ 'emailjs', 'dob', 'ssn', 'phone' ⊂ 'headphones').
+const AMBIGUOUS_IN_PACKAGE_NAMES = new Set([
+  'race', 'dob', 'ssn', 'email', 'e_mail', 'phone', 'mobile', 'political',
+]);
+const FORBIDDEN_ID_SUBSTRINGS = Object.freeze(
+  FORBIDDEN_KEY_SUBSTRINGS.filter((t) => !AMBIGUOUS_IN_PACKAGE_NAMES.has(t)),
+);
+
+// GUARD-ID-B: ALLOWLISTA przestrzeni nazw. Tylko jawnie onamespace'owane
+// identyfikatory. Gołe ('JanKowalski', 'left-pad') i kropkowane
+// ('jan.kowalski', 'example.com') tokeny są ODRZUCANE, bo po stringu NIE DA SIĘ
+// odróżnić nazwiska od nazwy pakietu ani od domeny (patrz KNOWN-LIMITATIONS).
+const ID_NAMESPACES = Object.freeze([
+  // Package URL (purl): pkg:npm/express@4.18.2, pkg:maven/org.ex/lib@1.0
+  { name: 'purl', re: /^pkg:[a-z][a-z0-9.+-]*\/[A-Za-z0-9._~%!$&'()*+,;=:@/-]+$/ },
+  // DID: did:example:foundation-eu
+  { name: 'did', re: /^did:[a-z0-9]+:[A-Za-z0-9._:%-]+$/ },
+  // URL: https://example.org/lib
+  { name: 'url', re: /^https?:\/\/[A-Za-z0-9._~%-]+(?::\d+)?(?:\/[^\s]*)?$/ },
+]);
+
 function assertMachineId(id) {
   const s = String(id);
-  if (/\s/.test(s) || !MACHINE_ID_RE.test(s)) {
+  // GUARD-ID-A — termin osobowy w wartości identyfikatora.
+  const norm = normKey(s);
+  for (const bad of FORBIDDEN_ID_SUBSTRINGS) {
+    if (norm.includes(bad)) {
+      throw new PersonDataError(`component/entity="${s}" (termin osobowy "${bad}")`);
+    }
+  }
+  // GUARD-ID-B — allowlista przestrzeni nazw.
+  if (!ID_NAMESPACES.some((ns) => ns.re.test(s))) {
     throw new DeclarationError(
-      `component/entity "${s}" nie jest identyfikatorem maszynowym ` +
-        `(DID/URI/pakiet/domena, bez spacji). Narzędzie klasyfikuje KOMPONENTY, ` +
-        `NIE nazwiska ani nazwy podmiotów w wolnym tekście (agents-not-people).`,
+      `component/entity "${s}" nie należy do allowlisty identyfikatorów ` +
+        `maszynowych (pkg:… | did:… | https://…). Narzędzie klasyfikuje ` +
+        `KOMPONENTY, NIE nazwiska ani nazwy podmiotów w wolnym tekście ` +
+        `(agents-not-people).`,
     );
   }
 }
@@ -116,7 +190,7 @@ function assertNoPersonData(value, pathPrefix = '') {
   if (typeof value === 'string') {
     if (value.length <= MAX_VALUE_LEN) {
       if (EMAIL_RE.test(value)) throw new PersonDataError(`${pathPrefix} (wartość=email)`);
-      if (PESEL_RE.test(value)) throw new PersonDataError(`${pathPrefix} (wartość=11-cyfr/PESEL)`);
+      if (containsPesel(value)) throw new PersonDataError(`${pathPrefix} (wartość=PESEL)`);
       if (PHONE_RE.test(value)) throw new PersonDataError(`${pathPrefix} (wartość=telefon)`);
     }
     return;
@@ -236,7 +310,12 @@ function buildDeclarationMap(root) {
         `Deklaracja #${i} bez pola component/entity — brak identyfikatora.`,
       );
     }
-    assertMachineId(key);
+    // Guard na OBA pola, nie tylko na zwycięzcę declKey(): przy obecnym
+    // `component` pole `entity` nie było wcześniej w ogóle sprawdzane, więc
+    // `{component:"pkg:npm/x", entity:"Jan Kowalski"}` przechodziło.
+    if (decl.component != null && String(decl.component).trim()) assertMachineId(String(decl.component).trim());
+    if (decl.entity != null && String(decl.entity).trim()) assertMachineId(String(decl.entity).trim());
+    // GUARD-DUP (integrity): dwie deklaracje tego samego id => ABORT.
     if (map.has(key)) {
       throw new DeclarationError(
         `Zduplikowana deklaracja dla "${key}".`,
@@ -308,8 +387,8 @@ function runSelftest() {
 
   // (1) POZYTYWNY: komponent z deklaracją country=PL => EU
   check('komponent EU (country=PL)', () => {
-    const root = { components: [{ component: 'lib-pl', country: 'PL' }] };
-    const { results } = classify({ declarationsRoot: root, components: ['lib-pl'] });
+    const root = { components: [{ component: 'pkg:generic/lib-pl', country: 'PL' }] };
+    const { results } = classify({ declarationsRoot: root, components: ['pkg:generic/lib-pl'] });
     assert(results[0].jurisdiction_class === 'EU', 'oczekiwano EU');
     assert(results[0].declared === true, 'oczekiwano declared=true');
   });
@@ -323,26 +402,26 @@ function runSelftest() {
 
   // (1c) POZYTYWNY: EEA (country=NO)
   check('komponent EEA (country=NO)', () => {
-    const root = [{ component: 'lib-no', country: 'NO' }];
-    const { results } = classify({ declarationsRoot: root, components: ['lib-no'] });
+    const root = [{ component: 'pkg:generic/lib-no', country: 'NO' }];
+    const { results } = classify({ declarationsRoot: root, components: ['pkg:generic/lib-no'] });
     assert(results[0].jurisdiction_class === 'EEA', 'oczekiwano EEA');
   });
 
   // (1d) POZYTYWNY: non-EU (country=US)
   check('komponent non-EU (country=US)', () => {
-    const root = [{ component: 'lib-us', country: 'US' }];
-    const { results } = classify({ declarationsRoot: root, components: ['lib-us'] });
+    const root = [{ component: 'pkg:generic/lib-us', country: 'US' }];
+    const { results } = classify({ declarationsRoot: root, components: ['pkg:generic/lib-us'] });
     assert(results[0].jurisdiction_class === 'non-EU', 'oczekiwano non-EU');
   });
 
   // (2) NEUTRALNY: komponent BEZ deklaracji => UNKNOWN (nie minus)
   check('komponent bez deklaracji => UNKNOWN', () => {
-    const root = { components: [{ component: 'lib-pl', country: 'PL' }] };
+    const root = { components: [{ component: 'pkg:generic/lib-pl', country: 'PL' }] };
     const { results } = classify({
       declarationsRoot: root,
-      components: ['lib-pl', 'lib-nieznany'],
+      components: ['pkg:generic/lib-pl', 'pkg:generic/lib-nieznany'],
     });
-    const unknown = results.find((r) => r.component === 'lib-nieznany');
+    const unknown = results.find((r) => r.component === 'pkg:generic/lib-nieznany');
     assert(unknown, 'brak wpisu dla lib-nieznany');
     assert(unknown.jurisdiction_class === 'UNKNOWN', 'oczekiwano UNKNOWN');
     assert(unknown.declared === false, 'oczekiwano declared=false');
@@ -350,10 +429,10 @@ function runSelftest() {
 
   // (3) NEGATYWNY: deklaracja z polem OSOBY => ABORT (throw)
   check('NEGATYWNY: pole person => ABORT', () => {
-    const root = { components: [{ component: 'x', person: { name: 'Jan K.' }, country: 'PL' }] };
+    const root = { components: [{ component: 'pkg:generic/x', person: { name: 'Jan K.' }, country: 'PL' }] };
     let threw = false;
     try {
-      classify({ declarationsRoot: root, components: ['x'] });
+      classify({ declarationsRoot: root, components: ['pkg:generic/x'] });
     } catch (e) {
       threw = e instanceof PersonDataError;
     }
@@ -362,10 +441,10 @@ function runSelftest() {
 
   // (3b) NEGATYWNY: natural_person zagnieżdżony głęboko => ABORT
   check('NEGATYWNY: natural_person (deep) => ABORT', () => {
-    const root = [{ component: 'y', country: 'DE', meta: { info: { natural_person: true } } }];
+    const root = [{ component: 'pkg:generic/y', country: 'DE', meta: { info: { natural_person: true } } }];
     let threw = false;
     try {
-      classify({ declarationsRoot: root, components: ['y'] });
+      classify({ declarationsRoot: root, components: ['pkg:generic/y'] });
     } catch (e) {
       threw = e instanceof PersonDataError;
     }
@@ -374,10 +453,10 @@ function runSelftest() {
 
   // (3c) NEGATYWNY: nationality_of_person => ABORT
   check('NEGATYWNY: nationality_of_person => ABORT', () => {
-    const root = [{ component: 'z', nationality_of_person: 'PL' }];
+    const root = [{ component: 'pkg:generic/z', nationality_of_person: 'PL' }];
     let threw = false;
     try {
-      classify({ declarationsRoot: root, components: ['z'] });
+      classify({ declarationsRoot: root, components: ['pkg:generic/z'] });
     } catch (e) {
       threw = e instanceof PersonDataError;
     }
@@ -386,10 +465,10 @@ function runSelftest() {
 
   // (3d) NEGATYWNY: nationality (narodowość) => ABORT
   check('NEGATYWNY: nationality => ABORT', () => {
-    const root = [{ component: 'q', nationality: 'German' }];
+    const root = [{ component: 'pkg:generic/q', nationality: 'German' }];
     let threw = false;
     try {
-      classify({ declarationsRoot: root, components: ['q'] });
+      classify({ declarationsRoot: root, components: ['pkg:generic/q'] });
     } catch (e) {
       threw = e instanceof PersonDataError;
     }
@@ -400,10 +479,10 @@ function runSelftest() {
   // Wektor sędziego: przed poprawką guard robił tylko toLowerCase(), więc
   // 'natural-person' NIE trafiał w 'natural_person' i PRZECHODZIŁ. Teraz FAIL.
   check("NEGATYWNY: 'natural-person' (myślnik) => ABORT", () => {
-    const root = [{ component: 'r', 'natural-person': { imie: 'X' }, country: 'PL' }];
+    const root = [{ component: 'pkg:generic/r', 'natural-person': { imie: 'X' }, country: 'PL' }];
     let threw = false;
     try {
-      classify({ declarationsRoot: root, components: ['r'] });
+      classify({ declarationsRoot: root, components: ['pkg:generic/r'] });
     } catch (e) {
       threw = e instanceof PersonDataError;
     }
@@ -414,10 +493,10 @@ function runSelftest() {
   // Drugi wektor obchodzenia: camelCase. Normalizacja sklejona + wpis
   // 'naturalperson' w FORBIDDEN_PERSON_KEYS domyka lukę.
   check("NEGATYWNY: 'naturalPerson' (camelCase) => ABORT", () => {
-    const root = [{ component: 's', naturalPerson: true, country: 'DE' }];
+    const root = [{ component: 'pkg:generic/s', naturalPerson: true, country: 'DE' }];
     let threw = false;
     try {
-      classify({ declarationsRoot: root, components: ['s'] });
+      classify({ declarationsRoot: root, components: ['pkg:generic/s'] });
     } catch (e) {
       threw = e instanceof PersonDataError;
     }
@@ -426,10 +505,10 @@ function runSelftest() {
 
   // (3g) NEGATYWNY [regresja F5]: 'nationality of person' (spacje) => ABORT
   check("NEGATYWNY: 'nationality of person' (spacje) => ABORT", () => {
-    const root = [{ component: 't', 'nationality of person': 'PL' }];
+    const root = [{ component: 'pkg:generic/t', 'nationality of person': 'PL' }];
     let threw = false;
     try {
-      classify({ declarationsRoot: root, components: ['t'] });
+      classify({ declarationsRoot: root, components: ['pkg:generic/t'] });
     } catch (e) {
       threw = e instanceof PersonDataError;
     }
@@ -451,64 +530,152 @@ function runSelftest() {
 
   // (3i) NEGATYWNY [audyt HIGH:45-50]: klucz `person_nationality` => ABORT
   check('NEGATYWNY: person_nationality => ABORT', () => {
-    const root = [{ component: 'lib-a', person_nationality: 'German', country: 'DE' }];
+    const root = [{ component: 'pkg:generic/lib-a', person_nationality: 'German', country: 'DE' }];
     let threw = false;
-    try { classify({ declarationsRoot: root, components: ['lib-a'] }); }
+    try { classify({ declarationsRoot: root, components: ['pkg:generic/lib-a'] }); }
     catch (e) { threw = e instanceof PersonDataError; }
     assert(threw, 'oczekiwano PersonDataError dla person_nationality');
   });
 
   // (3j) NEGATYWNY [audyt HIGH:45-50]: klucz `citizenship` => ABORT
   check('NEGATYWNY: citizenship => ABORT', () => {
-    const root = [{ component: 'lib-b', citizenship: 'PL' }];
+    const root = [{ component: 'pkg:generic/lib-b', citizenship: 'PL' }];
     let threw = false;
-    try { classify({ declarationsRoot: root, components: ['lib-b'] }); }
+    try { classify({ declarationsRoot: root, components: ['pkg:generic/lib-b'] }); }
     catch (e) { threw = e instanceof PersonDataError; }
     assert(threw, 'oczekiwano PersonDataError dla citizenship');
   });
 
   // (3k) NEGATYWNY [audyt HIGH:45-50]: klucz `gender` => ABORT
   check('NEGATYWNY: gender => ABORT', () => {
-    const root = [{ component: 'lib-c', gender: 'F', country: 'PL' }];
+    const root = [{ component: 'pkg:generic/lib-c', gender: 'F', country: 'PL' }];
     let threw = false;
-    try { classify({ declarationsRoot: root, components: ['lib-c'] }); }
+    try { classify({ declarationsRoot: root, components: ['pkg:generic/lib-c'] }); }
     catch (e) { threw = e instanceof PersonDataError; }
     assert(threw, 'oczekiwano PersonDataError dla gender');
   });
 
   // (3l) NEGATYWNY [audyt HIGH:45-50]: klucz `pesel` => ABORT
   check('NEGATYWNY: pesel (klucz) => ABORT', () => {
-    const root = [{ component: 'lib-d', pesel: '00000000000' }];
+    const root = [{ component: 'pkg:generic/lib-d', pesel: '00000000000' }];
     let threw = false;
-    try { classify({ declarationsRoot: root, components: ['lib-d'] }); }
+    try { classify({ declarationsRoot: root, components: ['pkg:generic/lib-d'] }); }
     catch (e) { threw = e instanceof PersonDataError; }
     assert(threw, 'oczekiwano PersonDataError dla pesel');
   });
 
   // (3m) NEGATYWNY [value-scan]: e-mail w WARTOŚCI pod dozwolonym kluczem => ABORT
   check('NEGATYWNY: wartość e-mail => ABORT', () => {
-    const root = [{ component: 'lib-e', contact: 'jan.kowalski@example.com', country: 'PL' }];
+    const root = [{ component: 'pkg:generic/lib-e', contact: 'jan.kowalski@example.com', country: 'PL' }];
     let threw = false;
-    try { classify({ declarationsRoot: root, components: ['lib-e'] }); }
+    try { classify({ declarationsRoot: root, components: ['pkg:generic/lib-e'] }); }
     catch (e) { threw = e instanceof PersonDataError; }
     assert(threw, 'oczekiwano PersonDataError dla wartości e-mail');
   });
 
-  // (3n) NEGATYWNY [value-scan]: 11 cyfr (PESEL) w WARTOŚCI => ABORT
-  check('NEGATYWNY: wartość 11-cyfr/PESEL => ABORT', () => {
-    const root = [{ component: 'lib-f', ref: 'id 44051401359 x', country: 'PL' }];
+  // (3n) NEGATYWNY [GUARD-PESEL — WEKTOR IZOLUJĄCY, audyt R2 MED]
+  // PESEL osadzony w ciągu 17 cyfr. PHONE_RE dopasowuje 9–14 cyfr zakotwiczonych
+  // `(?:^|\D)…(?:\D|$)`, więc w ciągu 17 cyfr NIE MA dopasowania telefonu; email
+  // też nie. Wyłączenie GUARD-PESEL wywala DOKŁADNIE ten test.
+  check('NEGATYWNY [izolujący]: PESEL w ciągu 17 cyfr => ABORT', () => {
+    const val = 'batch 99999944051401359 end';
+    assert(!PHONE_RE.test(val), 'wektor nieizolujący: PHONE_RE też łapie');
+    assert(!EMAIL_RE.test(val), 'wektor nieizolujący: EMAIL_RE też łapie');
+    const root = [{ component: 'pkg:generic/lib-f', ref: val, country: 'PL' }];
     let threw = false;
-    try { classify({ declarationsRoot: root, components: ['lib-f'] }); }
+    try { classify({ declarationsRoot: root, components: ['pkg:generic/lib-f'] }); }
     catch (e) { threw = e instanceof PersonDataError; }
-    assert(threw, 'oczekiwano PersonDataError dla wartości 11-cyfr');
+    assert(threw, 'oczekiwano PersonDataError dla PESEL (suma kontrolna)');
+  });
+
+  // (3o) NEGATYWNY [GUARD-PHONE — WEKTOR IZOLUJĄCY]
+  // Telefon z separatorami: 4 ciągi cyfr, każdy < 11 => GUARD-PESEL nie łapie.
+  check('NEGATYWNY [izolujący]: wartość telefon => ABORT', () => {
+    const val = 'tel +48 123 456 789';
+    assert(!containsPesel(val), 'wektor nieizolujący: GUARD-PESEL też łapie');
+    assert(!EMAIL_RE.test(val), 'wektor nieizolujący: EMAIL_RE też łapie');
+    const root = [{ component: 'pkg:generic/lib-g', ref: val, country: 'PL' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['pkg:generic/lib-g'] }); }
+    catch (e) { threw = e instanceof PersonDataError; }
+    assert(threw, 'oczekiwano PersonDataError dla telefonu');
+  });
+
+  // ── Audyt roxkon/RSpace RUNDA 2: guard id był KOSMETYCZNY (bariera = spacja) ──
+
+  // (3p) NEGATYWNY [GUARD-ID-A — WEKTOR IZOLUJĄCY]: DID z jawnym `person`.
+  // Przed R2: `did:person:fatou.diop` + country=CM dawało "non-EU" = narodowość
+  // osoby. Przechodzi allowlistę DID (GUARD-ID-B), więc łapie go WYŁĄCZNIE
+  // GUARD-ID-A. Wyłączenie GUARD-ID-A wywala DOKŁADNIE ten test.
+  check('NEGATYWNY [izolujący]: entity="did:person:…" => ABORT', () => {
+    const root = [{ entity: 'did:person:fatou.diop', country: 'CM' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['did:person:fatou.diop'] }); }
+    catch (e) { threw = e instanceof PersonDataError; }
+    assert(threw, 'oczekiwano PersonDataError dla did:person:…');
+  });
+
+  // (3q) NEGATYWNY [GUARD-ID-B — WEKTOR IZOLUJĄCY]: kropkowany token-nazwisko.
+  // Przed R2: `entity:"jan.kowalski", country:"SN"` => "non-EU". Brak terminu
+  // osobowego w stringu, więc GUARD-ID-A go NIE łapie — łapie tylko allowlista.
+  check('NEGATYWNY [izolujący]: entity="jan.kowalski" => ABORT', () => {
+    const root = [{ entity: 'jan.kowalski', country: 'SN' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['jan.kowalski'] }); }
+    catch (e) { threw = e instanceof DeclarationError; }
+    assert(threw, 'oczekiwano DeclarationError (poza allowlistą)');
+  });
+
+  // (3r) NEGATYWNY [regresja R2]: goły token bez spacji ("JanKowalski").
+  // Ten sam guard co (3q) — wektor REGRESYJNY, NIE izolujący.
+  check('NEGATYWNY: entity="JanKowalski" (bez spacji) => ABORT', () => {
+    const root = [{ entity: 'JanKowalski', country: 'DE' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['JanKowalski'] }); }
+    catch (e) { threw = e instanceof DeclarationError; }
+    assert(threw, 'oczekiwano DeclarationError dla gołego tokenu');
+  });
+
+  // (3s) NEGATYWNY [GUARD-ID na OBU polach]: entity nie było sprawdzane, gdy
+  // obecne było `component` (declKey zwracał component).
+  check('NEGATYWNY: entity="Jan Kowalski" obok component => ABORT', () => {
+    const root = [{ component: 'pkg:npm/lib-h', entity: 'Jan Kowalski', country: 'DE' }];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['pkg:npm/lib-h'] }); }
+    catch (e) { threw = e instanceof DeclarationError; }
+    assert(threw, 'oczekiwano DeclarationError dla entity w wolnym tekście');
+  });
+
+  // (3t) POZYTYWNY [regresja R2 — guard był ZA MOCNY]: poprawny Package URL
+  // z `@` w ŚRODKU musi PRZEJŚĆ. MACHINE_ID_RE dopuszczał `@` tylko na pozycji 0,
+  // więc `pkg:npm/express@4.18.2` — format z własnego --help — był ABORTowany.
+  check('POZYTYWNY: purl pkg:npm/express@4.18.2 PRZECHODZI', () => {
+    const root = [{ component: 'pkg:npm/express@4.18.2', country: 'US' }];
+    const { results } = classify({ declarationsRoot: root, components: ['pkg:npm/express@4.18.2'] });
+    assert(results[0].jurisdiction_class === 'non-EU', 'oczekiwano non-EU');
+    assert(results[0].declared === true, 'oczekiwano declared=true');
+  });
+
+  // (5) STRAŻNIK [GUARD-DUP — WEKTOR IZOLUJĄCY, audyt R2 LOW]: guard duplikatu
+  // deklaracji (integrity) nie miał ŻADNEGO wektora — jego usunięcie nie wywalało
+  // niczego. Wyłączenie GUARD-DUP wywala DOKŁADNIE ten test.
+  check('STRAŻNIK [izolujący]: zduplikowana deklaracja => DeclarationError', () => {
+    const root = [
+      { component: 'pkg:generic/dup', country: 'PL' },
+      { component: 'pkg:generic/dup', country: 'US' },
+    ];
+    let threw = false;
+    try { classify({ declarationsRoot: root, components: ['pkg:generic/dup'] }); }
+    catch (e) { threw = e instanceof DeclarationError && /Zduplikowana/.test(e.message); }
+    assert(threw, 'oczekiwano DeclarationError dla duplikatu');
   });
 
   // (4) STRAŻNIK: jawne jurisdiction_class="UNKNOWN" jest zakazane
   check('jawne UNKNOWN => DeclarationError', () => {
-    const root = [{ component: 'w', jurisdiction_class: 'UNKNOWN' }];
+    const root = [{ component: 'pkg:generic/w', jurisdiction_class: 'UNKNOWN' }];
     let threw = false;
     try {
-      classify({ declarationsRoot: root, components: ['w'] });
+      classify({ declarationsRoot: root, components: ['pkg:generic/w'] });
     } catch (e) {
       threw = e instanceof DeclarationError;
     }
@@ -560,9 +727,20 @@ Klasy: EU | EEA | non-EU | UNKNOWN   (brak deklaracji => UNKNOWN, neutralny)
                 exit(0) gdy OK, exit(1) gdy błąd.
 
 TWARDY ZAKAZ (agents-not-people; ZERO klasyfikacji narodowości OSOBY):
-  - component/entity musi być id maszynowym (DID/URI/pakiet/domena, bez spacji);
+  - component ORAZ entity muszą należeć do ALLOWLISTY przestrzeni nazw:
+        pkg:<typ>/<nazwa>[@wersja]    np. pkg:npm/express@4.18.2
+        did:<metoda>:<id>             np. did:example:foundation-eu
+        https://<host>/<sciezka>      np. https://example.org/lib
+    Gołe i kropkowane tokeny ("left-pad", "JanKowalski", "jan.kowalski",
+    "example.com") oraz wolny tekst ze spacją => ABORT;
+  - wartość component/entity z terminem osobowym (did:person:…) => ABORT;
   - klucz z danymi osoby (person/nationality/citizen/pesel/gender/first_name/…) => ABORT;
-  - wartość-e-mail / 11-cyfr(PESEL) / telefon => ABORT.
+  - wartość-e-mail / PESEL (suma kontrolna) / telefon => ABORT.
+
+ZNANE OGRANICZENIE (KNOWN-LIMITATIONS.md): dopasowanie po STRINGU nie odróżnia
+nazwiska od nazwy pakietu. Identyfikator w dozwolonej przestrzeni nazw, który
+koduje nazwisko (np. did:x:local:jan1kowalski), PRZEJDZIE. Allowlista podnosi
+koszt nadużycia — NIE eliminuje go.
 `;
 
 function readJson(pathArg) {

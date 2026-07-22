@@ -2,10 +2,10 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "$profile": "cyclonedx-lite (podzbior: bez services/vulnerabilities/compositions)",
-  "serialNumber": "urn:uuid:cadedf78-a0e3-4ddb-a6a3-093810940851",
+  "serialNumber": "urn:uuid:719f1391-f398-49a5-84b7-df01454aefc2",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-07-21T16:38:39.217Z",
+    "timestamp": "2026-07-22T00:33:35.167Z",
     "tools": [
       {
         "vendor": "K0NSULT",
@@ -156,7 +156,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "ff75581ae367f44ee09dcc8be316c79a52f5c0f24138733bbbbe42a0b24318cb"
+          "content": "97d14b199622398f9667fedad6536a565de984eb202d6e9f105da9fd5ab22315"
         }
       ],
       "properties": [
@@ -166,7 +166,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "25628"
+          "value": "36049"
         },
         {
           "name": "k0nsult:eol",
@@ -188,7 +188,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "1e254dc935d714a628f54492bc26ef7373936f8b037471e5dbc8d8b3bfabc85f"
+          "content": "f568a63d227cf306c372453fc7c3ef7a1df81b48854d97cc8765a5cf842fe1c4"
         }
       ],
       "properties": [
@@ -198,7 +198,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "5719"
+          "value": "9408"
         },
         {
           "name": "k0nsult:eol",
@@ -348,7 +348,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "d0f1cb1133b57bc74789fee2c8aabe4163183b47b51e910baef24bdde275fa6a"
+          "content": "e908489d3bb65e3a328b2311f4c9b1f8e22aa381b8ed1ec2180dc1e437131bd0"
         }
       ],
       "properties": [
@@ -358,7 +358,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "115"
+          "value": "197"
         },
         {
           "name": "k0nsult:eol",
@@ -380,7 +380,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "79a67040175919fba8d8d5d9100d7be82b5a9ba381ed814dcd4b75d3b26c20e6"
+          "content": "2667e639828effb49cd73d902e89658a76f9039a9c1674e1ffb1f2a55a862770"
         }
       ],
       "properties": [
@@ -390,7 +390,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "343"
+          "value": "449"
         },
         {
           "name": "k0nsult:eol",
@@ -412,7 +412,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "10b537e467bbc99a2f345e506396b208d02812c3480e7ccd122d66f5b64b719d"
+          "content": "99021a00131240257ac53d6111b3a9e525378a2ff556883a844e74d6924513ca"
         }
       ],
       "properties": [
@@ -422,7 +422,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "3770"
+          "value": "8394"
         },
         {
           "name": "k0nsult:eol",
@@ -668,7 +668,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "2ebeddb562cc01a4b83230eb5ffa22352ce7527e12afd6f1b22c8600581b3436"
+          "content": "bd6d24aa127f83afcb04944f9e8e641569457b950f06abb8eb965efcabac932d"
         }
       ],
       "properties": [
@@ -678,7 +678,7 @@
         },
         {
           "name": "k0nsult:bytes",
-          "value": "9354"
+          "value": "10123"
         },
         {
           "name": "k0nsult:eol",

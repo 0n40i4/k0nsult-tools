@@ -1,8 +1,8 @@
 {
   "components": [
-    { "component": "eu-crypto", "entity": "Fundacja PL", "country": "PL" },
-    { "component": "nordic-lib", "entity": "Norsk AS", "country": "NO" },
-    { "component": "left-pad", "entity": "OpenJS Foundation", "country": "US" },
-    { "component": "eu-declared", "entity": "Verein DE", "jurisdiction_class": "EU" }
+    { "component": "pkg:npm/eu-crypto@1.2.0", "entity": "did:example:fundacja-pl", "country": "PL" },
+    { "component": "pkg:npm/nordic-lib@0.9.1", "entity": "did:example:norsk-as", "country": "NO" },
+    { "component": "pkg:npm/left-pad@1.3.0", "entity": "https://openjsf.org", "country": "US" },
+    { "component": "pkg:maven/org.example/eu-declared@2.0", "entity": "did:example:verein-de", "jurisdiction_class": "EU" }
   ]
 }

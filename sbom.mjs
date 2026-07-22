@@ -65,6 +65,13 @@ function listFiles(dir, { recursive = false, ext = null } = {}) {
   }
   return out;
 }
+// Artefakt SBOM = kazdy plik konczacy sie na "sbom.json" (sbom.json,
+// k0nsult-sbom.json, …) ORAZ biezacy --out. Wykluczany ZAWSZE i niezaleznie od
+// tego, gdzie trafia --out — inaczej licznik komponentow zalezy od tego, czy w
+// klonie lezy juz zacommitowany SBOM (niedeterminizm, audyt R2 MED).
+function isSbomArtifact(f) {
+  return path.resolve(f) === OUT || path.basename(f).toLowerCase().endsWith('sbom.json');
+}
 function relPosix(p) {
   return path.relative(ROOT, p).split(path.sep).join('/');
 }
@@ -85,7 +92,12 @@ function buildFileComponents() {
   const components = [];
   const META_FILES = new Set(['publiccode.yml', 'index.json']); // metadane o repo, nie „software"
   for (const f of listFiles(ROOT, { recursive: true })) {
-    if (path.resolve(f) === OUT) continue;        // nie inwentaryzuj wlasnego outputu
+    // Wykluczenie KAZDEGO *sbom.json, nie tylko biezacego --out.
+    // Audyt R2 (MED): self-exclusion dotyczyla wylacznie OUT, wiec zacommitowany
+    // sbom.json byl liczony jako komponent, gdy --out wskazywal poza drzewo.
+    // To samo repo dawalo committed=23 vs regen=24 => licznik NIEDETERMINISTYCZNY
+    // (zalezny od stanu klonu i od miejsca zapisu), a wiec bezuzyteczny jako dowod.
+    if (isSbomArtifact(f)) continue;
     if (META_FILES.has(path.basename(f))) continue; // publiccode.yml odwoluje sie do hasha sbom -> wyklucz (anty-cykl)
     const raw = fs.readFileSync(f);
     const buf = contentForHash(raw);              // CRLF->LF (jak swiezy klon eol=lf)
