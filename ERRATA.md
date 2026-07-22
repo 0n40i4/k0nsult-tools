@@ -10,7 +10,13 @@ silently edited. Canonical index:
 consultation submission): *"SBOM = 21 components; 119 across the commons — a figure
 re-derivable with `node sbom.mjs`"*.
 
-**Status: WRONG, and the re-derivability property itself did not hold.**
+**The counts were accurate when computed** — the provenance of each figure, with the
+commit it was taken at, is tabulated in the
+[canonical errata](https://github.com/0n40i4/k0nsult-governance/blob/master/ERRATA.md).
+The repositories were growing daily, so the figures went stale within hours.
+
+**The re-derivability property, however, did not hold** — and that is the defect, because
+a figure advertised as independently reproducible must reproduce.
 
 Two independent defects, both now fixed:
 
